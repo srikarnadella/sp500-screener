@@ -3,3 +3,4 @@ pandas>=2.0
 numpy>=1.24
 requests>=2.31
 lxml>=4.9
+scikit-learn>=1.3   # ml_respect.py only -- experimental, not used by the live screener/dip report

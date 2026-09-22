@@ -250,25 +250,39 @@ def level_respect(high, low, close, level, atr, role,
             cond = ok & (prev_close < level) & (high >= level - tol * atr)
 
     held = broke = 0
-    last = -10 ** 9
+    for t in _test_indices(cond, cooldown):
+        outcome = _resolve_outcome(close, level, atr, t, role, move, horizon)
+        if outcome is None:
+            continue
+        held += outcome
+        broke += 1 - outcome
+    return held, broke
+
+
+def _test_indices(cond: np.ndarray, cooldown: int) -> list[int]:
+    """Bar indices where `cond` (a test-condition mask) fires, at most one per `cooldown` bars."""
+    out, last = [], -10 ** 9
     for t in np.flatnonzero(cond):
         if t - last < cooldown:
             continue
         last = t
-        seg = close[t:t + horizon + 1]
-        lv, a = level[t], atr[t]
-        away = np.flatnonzero(seg >= lv + move * a)
-        through = np.flatnonzero(seg <= lv - move * a)
-        good, bad = (away, through) if role == "support" else (through, away)
-        g = good[0] if good.size else np.inf
-        b = bad[0] if bad.size else np.inf
-        if np.isinf(g) and np.isinf(b):
-            continue
-        if g < b:
-            held += 1
-        else:
-            broke += 1
-    return held, broke
+        out.append(t)
+    return out
+
+
+def _resolve_outcome(close: np.ndarray, level: np.ndarray, atr: np.ndarray, t: int, role: str,
+                     move: float = MOVE_ATR, horizon: int = HORIZON) -> int | None:
+    """1 if the test at bar `t` resolved as held, 0 if broke, None if neither happened in time."""
+    seg = close[t:t + horizon + 1]
+    lv, a = level[t], atr[t]
+    away = np.flatnonzero(seg >= lv + move * a)
+    through = np.flatnonzero(seg <= lv - move * a)
+    good, bad = (away, through) if role == "support" else (through, away)
+    g = good[0] if good.size else np.inf
+    b = bad[0] if bad.size else np.inf
+    if np.isinf(g) and np.isinf(b):
+        return None
+    return 1 if g < b else 0
 
 
 def shrunk_rate(held: int, broke: int, base: float = 0.5, k: int = PRIOR_WEIGHT) -> float:

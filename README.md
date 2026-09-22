@@ -97,6 +97,37 @@ python test_dip.py                   # includes look-ahead, overlap and bias che
 Detection power: with a 10-session hold the gate finds a planted 3 to 5 day bounce pattern in ~60% to 98% of simulated
 series but is nearly blind to reversion slower than about 10 days.
 
+## Experimental: a learned P(hold) model (`ml_respect.py`)
+
+**Not wired into the live report.** `level_respect()`'s "respect" measurement is a hand-built rule
+(count held vs. broke, shrink toward a placebo baseline). `ml_respect.py` asks whether a gradient-
+boosted classifier, trained on features at each test event (RSI, %B, relvol, trend context, which
+level/role/family) pooled across every stock, predicts held/broke better than that heuristic does
+**out of time** -- trained on the earlier events, scored on a later slice neither side has seen.
+
+- **The heuristic side is reconstructed causally**: each stock's own shrunk rate, computed only
+  from that stock's training-period events -- not a straw man built from pooled/global rates.
+- **A constant baseline (always predict the training hold-rate) is reported alongside both.**
+  This caught a real issue during development: the heuristic reconstruction scored *worse* than
+  this trivial constant on a run with only ~70% of history to estimate from, because shrinking
+  toward hundreds of per-ticker/level/role rates has more variance than one global rate when
+  there's little data per group. Without this baseline, "the model beats the heuristic" could
+  just mean the heuristic estimate was noisy, not that the model found anything real.
+- **Two out-of-sample checks**: same stocks/later dates, and entirely held-out tickers (stricter --
+  catches the model fingerprinting a stock's own quirks instead of learning something transferable).
+- **The decisive test lives in `test_ml_respect.py`**: shuffle the labels so there's provably
+  nothing left to learn, and confirm the model's Brier score collapses to the constant baseline
+  (no false skill) rather than "beating" a benchmark that has nothing real to find.
+
+```bash
+python ml_respect.py --demo     # synthetic data, no network, prints the benchmark
+python ml_respect.py            # live S&P 500 history, writes data/ml_respect_report.json
+python test_ml_respect.py       # the shuffle-label null check + regression tests
+```
+
+Whether this is worth wiring into `screener.py`'s live scoring depends on what it reports on real
+history, not synthetic data -- run it live and read the verdict before deciding.
+
 ## Set up the daily automation (GitHub Actions, free)
 
 1. Create a new GitHub repo and push this folder to it.

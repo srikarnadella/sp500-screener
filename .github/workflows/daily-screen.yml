@@ -33,6 +33,7 @@ jobs:
         run: |
           python test_screener.py
           python test_dip.py
+          python test_ml_respect.py
 
       - name: Run S&P 500 screener
         run: python screener.py
