@@ -2,8 +2,10 @@ name: Daily S&P 500 screen
 
 on:
   schedule:
-    # 21:30 UTC, Mon-Fri = 5:30pm EDT / 4:30pm EST, always after the US close.
-    - cron: "30 21 * * 1-5"
+    # 14:00 and 22:00 UTC, Mon-Fri = 9:00am and 5:00pm EST.
+    # GitHub Actions cron is fixed UTC year-round (no DST), so during EDT
+    # (mid-Mar to early Nov) these land at 10:00am and 6:00pm local clock time.
+    - cron: "0 14,22 * * 1-5"
   workflow_dispatch:   # adds a "Run workflow" button in the Actions tab
 
 permissions:

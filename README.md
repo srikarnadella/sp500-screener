@@ -60,7 +60,7 @@ series but is nearly blind to reversion slower than about 10 days.
    `https://<you>.github.io/<repo>/`. (Public repos only on free plans. Use a private repo without Pages
    and just open `docs/index.html` from a clone if you want it private.)
 3. **Actions tab > Daily S&P 500 screen > Run workflow** to run it once by hand and confirm it works.
-4. From then on it runs Mon-Fri at 21:30 UTC and commits the refreshed report.
+4. From then on it runs Mon-Fri at 9:00am and 5:00pm EST (14:00/22:00 UTC) and commits the refreshed report.
 
 ### Or run it on your own machine
 
