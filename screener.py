@@ -151,16 +151,21 @@ def download_prices(tickers: list[str], period: str = PERIOD,
     import yfinance as yf
 
     def fetch(chunk: list[str]) -> dict[str, pd.DataFrame]:
+        # An empty/short frame (rate limit) isn't an exception, so it needs its own retry check.
         for attempt in range(3):
             try:
                 data = yf.download(chunk, period=period, interval="1d",
                                    auto_adjust=True, group_by="ticker",
                                    threads=True, progress=False)
-                return _split_download(data, chunk)
+                out = _split_download(data, chunk)
+                if len(out) >= 0.5 * len(chunk) or attempt == 2:
+                    return out
+                print(f"[warn] only {len(out)}/{len(chunk)} came back, retrying",
+                      file=sys.stderr)
             except Exception as exc:
                 print(f"[warn] download attempt {attempt + 1} failed: {exc}",
                       file=sys.stderr)
-                time.sleep(3 * (attempt + 1))
+            time.sleep(3 * (attempt + 1))
         return {}
 
     result: dict[str, pd.DataFrame] = {}
@@ -170,8 +175,9 @@ def download_prices(tickers: list[str], period: str = PERIOD,
         print(f"  downloaded {min(i + batch, len(tickers))}/{len(tickers)}")
         time.sleep(1)
     missing = [t for t in tickers if t not in result]
-    if missing and len(missing) < len(tickers):  # one retry pass for stragglers
-        result.update(fetch(missing))
+    if missing:  # one retry pass for stragglers, chunked the same as the main pass
+        for i in range(0, len(missing), batch):
+            result.update(fetch(missing[i:i + batch]))
     return result
 
 
@@ -222,7 +228,7 @@ def level_respect(high, low, close, level, atr, role,
 
     A "test" happens when a bar reaches within `tol` ATRs of the level, coming
     from the correct side (from above for support, from below for resistance).
-    Over the next `horizon` bars the test resolves as:
+    Starting from that same bar's close, over the next `horizon` bars the test resolves as:
         held   - close moves `move` ATRs away from the level on the near side
                  (bounce off support / rejection at resistance) first
         broke  - close moves `move` ATRs through the level first
@@ -283,6 +289,17 @@ def _f(x, default=np.nan):
         return default
 
 
+def rel_strength(close: pd.Series, spy: pd.Series | None, n: int) -> float:
+    """n-session return minus SPY's return over the same dates (NaN without SPY)."""
+    if spy is None or len(close) <= n:
+        return np.nan
+    s = spy.reindex(close.index, method="ffill")
+    a, b = s.iloc[-1], s.iloc[-1 - n]
+    if not (np.isfinite(a) and np.isfinite(b)) or b <= 0:
+        return np.nan
+    return float(close.iloc[-1] / close.iloc[-1 - n] - a / b)
+
+
 # --------------------------------------------------------------------------- #
 # VIX regime
 # --------------------------------------------------------------------------- #
@@ -300,10 +317,11 @@ def vix_context(vix: pd.DataFrame, vix3m: pd.DataFrame | None) -> dict:
         if len(v3):
             term = level / float(v3.iloc[-1])
 
-    if hi10 >= 25 and level <= hi10 * 0.85 and chg5 < 0:
-        key = "rolling_over"
-    elif level >= 30 or (np.isfinite(term) and term >= 1.05):
+    stressed = level >= 30 or (np.isfinite(term) and term >= 1.05)
+    if stressed:
         key = "stress"
+    elif hi10 >= 25 and level <= hi10 * 0.85 and chg5 < 0:
+        key = "rolling_over"
     elif level > ma20 * 1.15 and chg5 > 0:
         key = "rising"
     elif level < 15 or pct < 0.15:
@@ -318,7 +336,7 @@ def vix_context(vix: pd.DataFrame, vix3m: pd.DataFrame | None) -> dict:
 # --------------------------------------------------------------------------- #
 # Per-stock analysis
 # --------------------------------------------------------------------------- #
-def analyze_stock(ticker: str, df: pd.DataFrame) -> dict | None:
+def analyze_stock(ticker: str, df: pd.DataFrame, spy_close: pd.Series | None = None) -> dict | None:
     d = add_indicators(df)
     if len(d) < MIN_BARS:
         return None
@@ -359,7 +377,7 @@ def analyze_stock(ticker: str, df: pd.DataFrame) -> dict | None:
                 ph, pb = level_respect(high, low, close, pl, atr, role)
                 acc[0] += ph
                 acc[1] += pb
-    base = {k: (shrunk_rate(h, b, 0.5, 4) if h + b else 0.5) for k, (h, b) in pool.items()}
+    base = {k: (shrunk_rate(h, b, 0.5) if h + b else 0.5) for k, (h, b) in pool.items()}
 
     # Pass 2: rate vs. baseline
     stats: dict[tuple[str, str], dict] = {}
@@ -371,7 +389,8 @@ def analyze_stock(ticker: str, df: pd.DataFrame) -> dict | None:
         # A respected support that gave way in the last 5 sessions
         if role == "support" and h + b >= MIN_EVENTS and rate - bs >= EXCESS_MIN:
             recent = (close[-6:] - lvls[name][-6:]) / a_now
-            if np.nanmax(recent[:-1]) >= 0 and recent[-1] <= -MOVE_ATR:
+            prior = recent[:-1]
+            if np.isfinite(prior).any() and np.nanmax(prior) >= 0 and recent[-1] <= -MOVE_ATR:
                 broken.append((name, rate, h + b, recent[-1], bs))
 
     def best(role: str):
@@ -448,6 +467,7 @@ def analyze_stock(ticker: str, df: pd.DataFrame) -> dict | None:
         resist_n=stats[(res_name, "resistance")]["n"] if res_name else 0,
         resist_score=res_score,
         long_raw=long_raw, fade_raw=fade_raw, respect_profile=profile,
+        rs_1m=rel_strength(d["Close"], spy_close, 21), rs_3m=rel_strength(d["Close"], spy_close, 63),
     )
     if broken:
         name, rate, n, dd, bs = max(broken, key=lambda z: z[1] - z[4])
@@ -599,7 +619,12 @@ def _dist_cell(name, dist) -> str:
     return _td(f"{_esc(name)}<small>{dist:+.1f} ATR</small>", sort=_esc(name))
 
 
-def _table(headers: list[str], rows: list[str], tid: str = "", sortable=True) -> str:
+def _rows(df: pd.DataFrame, cells) -> list[str]:
+    """Build <tr> strings, one per row, from a list of `(row) -> <td>...</td>` callables."""
+    return ["<tr>" + "".join(fn(r) for fn in cells) + "</tr>" for _, r in df.iterrows()]
+
+
+def _table(headers: list[str], rows: list[str], tid: str = "") -> str:
     if not rows:
         return '<div class="wrap"><p class="empty">Nothing meets the criteria today.</p></div>'
     ths = "".join(_th(h, left=(i == 0 or h in ("Sector", "Most-respected levels", "Status", "Rule", "Grade")))
@@ -636,65 +661,65 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, asof: pd.Timestamp,
   </dl>
 </section>"""
 
+    def sector_cell(r):
+        return _td(_esc(r["sector"]), cls="l", sort=_esc(r["sector"]))
+
+    def rsi_cell(r):
+        return _td(f"{r['rsi']:.0f}", sort=f"{r['rsi']:.1f}")
+
+    def pctb_cell(r):
+        return _td(f"{r['pctb']:.2f}", sort=f"{r['pctb']:.3f}")
+
+    def trend_cell(r):
+        return _td(_esc(r["trend"]), sort=_esc(r["trend"]))
+
+    def close_cell(r):
+        return _td(f"{r['close']:.2f}", sort=f"{r['close']:.2f}")
+
     # ---- long table
     lg = res[res["support_score"] > 0].sort_values("long_score", ascending=False).head(top)
-    long_rows = []
-    for _, r in lg.iterrows():
-        long_rows.append("<tr>" + _stock_cell(r) + _td(_esc(r["sector"]), cls="l", sort=_esc(r["sector"]))
-                         + _td(f"{r['close']:.2f}", sort=f"{r['close']:.2f}") + _chg_cell(r)
-                         + _td(f'<span class="score">{r["long_score"]:.0f}</span>', sort=f"{r['long_score']:.2f}")
-                         + _dist_cell(r["support_level"], r["support_dist_atr"])
-                         + _respect_cell(r["support_rate"], r["support_n"], r["support_base"])
-                         + _td(f"{r['rsi']:.0f}", sort=f"{r['rsi']:.1f}")
-                         + _td(f"{r['pctb']:.2f}", sort=f"{r['pctb']:.3f}")
-                         + _td(_esc(r["trend"]), sort=_esc(r["trend"])) + "</tr>")
-    long_tbl = _table(["Stock", "Sector", "Close", "1d", "Score", "Support", "Respect", "RSI", "%B", "Trend"],
-                      long_rows)
+    long_tbl = _table(
+        ["Stock", "Sector", "Close", "1d", "Score", "Support", "Respect", "RSI", "%B", "Trend"],
+        _rows(lg, [_stock_cell, sector_cell, close_cell, _chg_cell,
+                  lambda r: _td(f'<span class="score">{r["long_score"]:.0f}</span>', sort=f"{r['long_score']:.2f}"),
+                  lambda r: _dist_cell(r["support_level"], r["support_dist_atr"]),
+                  lambda r: _respect_cell(r["support_rate"], r["support_n"], r["support_base"]),
+                  rsi_cell, pctb_cell, trend_cell]))
 
     # ---- fade table
     fd = res[res["resist_score"] > 0].sort_values("fade_score", ascending=False).head(top)
-    fade_rows = []
-    for _, r in fd.iterrows():
-        fade_rows.append("<tr>" + _stock_cell(r) + _td(_esc(r["sector"]), cls="l", sort=_esc(r["sector"]))
-                         + _td(f"{r['close']:.2f}", sort=f"{r['close']:.2f}") + _chg_cell(r)
-                         + _td(f'<span class="score">{r["fade_score"]:.0f}</span>', sort=f"{r['fade_score']:.2f}")
-                         + _dist_cell(r["resist_level"], r["resist_dist_atr"])
-                         + _respect_cell(r["resist_rate"], r["resist_n"], r["resist_base"])
-                         + _td(f"{r['rsi']:.0f}", sort=f"{r['rsi']:.1f}")
-                         + _td(f"{r['pctb']:.2f}", sort=f"{r['pctb']:.3f}")
-                         + _td(_esc(r["trend"]), sort=_esc(r["trend"])) + "</tr>")
-    fade_tbl = _table(["Stock", "Sector", "Close", "1d", "Score", "Resistance", "Respect", "RSI", "%B", "Trend"],
-                      fade_rows)
+    fade_tbl = _table(
+        ["Stock", "Sector", "Close", "1d", "Score", "Resistance", "Respect", "RSI", "%B", "Trend"],
+        _rows(fd, [_stock_cell, sector_cell, close_cell, _chg_cell,
+                  lambda r: _td(f'<span class="score">{r["fade_score"]:.0f}</span>', sort=f"{r['fade_score']:.2f}"),
+                  lambda r: _dist_cell(r["resist_level"], r["resist_dist_atr"]),
+                  lambda r: _respect_cell(r["resist_rate"], r["resist_n"], r["resist_base"]),
+                  rsi_cell, pctb_cell, trend_cell]))
 
     # ---- broken table
     bk = res[res["broken_level"] != ""].assign(_x=lambda x: x["broken_rate"] - x["broken_base"]) \
         .sort_values("_x", ascending=False).head(top)
-    broke_rows = []
-    for _, r in bk.iterrows():
-        broke_rows.append("<tr>" + _stock_cell(r) + _td(_esc(r["sector"]), cls="l", sort=_esc(r["sector"]))
-                          + _td(f"{r['close']:.2f}", sort=f"{r['close']:.2f}") + _chg_cell(r)
-                          + _dist_cell(r["broken_level"], r["broken_dist_atr"])
-                          + _respect_cell(r["broken_rate"], r["broken_n"], r["broken_base"])
-                          + _td(f"{r['rsi']:.0f}", sort=f"{r['rsi']:.1f}")
-                          + _td(_esc(r["trend"]), sort=_esc(r["trend"])) + "</tr>")
-    broke_tbl = _table(["Stock", "Sector", "Close", "1d", "Level lost", "Respect", "RSI", "Trend"], broke_rows)
+    broke_tbl = _table(
+        ["Stock", "Sector", "Close", "1d", "Level lost", "Respect", "RSI", "Trend"],
+        _rows(bk, [_stock_cell, sector_cell, close_cell, _chg_cell,
+                  lambda r: _dist_cell(r["broken_level"], r["broken_dist_atr"]),
+                  lambda r: _respect_cell(r["broken_rate"], r["broken_n"], r["broken_base"]),
+                  rsi_cell, trend_cell]))
 
     # ---- all stocks
-    all_rows = []
-    for _, r in res.sort_values("long_score", ascending=False).iterrows():
-        all_rows.append("<tr>" + _stock_cell(r) + _td(_esc(r["sector"]), cls="l", sort=_esc(r["sector"]))
-                        + _td(f"{r['close']:.2f}", sort=f"{r['close']:.2f}") + _chg_cell(r)
-                        + _td(f"{r['long_score']:.0f}", sort=f"{r['long_score']:.2f}")
-                        + _td(f"{r['fade_score']:.0f}", sort=f"{r['fade_score']:.2f}")
-                        + _td(f"{r['rsi']:.0f}", sort=f"{r['rsi']:.1f}")
-                        + _td(f"{r['pctb']:.2f}", sort=f"{r['pctb']:.3f}")
-                        + _td(_pct(r["vs_sma50"], 1, True), sort=f"{r['vs_sma50']:.4f}", cls=_cls(r["vs_sma50"]))
-                        + _td(_pct(r["vs_sma200"], 1, True), sort=f"{r['vs_sma200']:.4f}", cls=_cls(r["vs_sma200"]))
-                        + _td(_esc(r["trend"]), sort=_esc(r["trend"]))
-                        + _td(_esc(r["respect_profile"] or "none above 50%"), cls="l", sort=_esc(r["respect_profile"]))
-                        + "</tr>")
-    all_tbl = _table(["Stock", "Sector", "Close", "1d", "Long", "Fade", "RSI", "%B", "vs 50d", "vs 200d",
-                      "Trend", "Most-respected levels"], all_rows, tid="all")
+    all_tbl = _table(
+        ["Stock", "Sector", "Close", "1d", "Long", "Fade", "RSI", "%B", "vs 50d", "vs 200d",
+         "Trend", "Most-respected levels"],
+        _rows(res.sort_values("long_score", ascending=False),
+             [_stock_cell, sector_cell, close_cell, _chg_cell,
+              lambda r: _td(f"{r['long_score']:.0f}", sort=f"{r['long_score']:.2f}"),
+              lambda r: _td(f"{r['fade_score']:.0f}", sort=f"{r['fade_score']:.2f}"),
+              rsi_cell, pctb_cell,
+              lambda r: _td(_pct(r["vs_sma50"], 1, True), sort=f"{r['vs_sma50']:.4f}", cls=_cls(r["vs_sma50"])),
+              lambda r: _td(_pct(r["vs_sma200"], 1, True), sort=f"{r['vs_sma200']:.4f}", cls=_cls(r["vs_sma200"])),
+              trend_cell,
+              lambda r: _td(_esc(r["respect_profile"] or "none above 50%"), cls="l", sort=_esc(r["respect_profile"]))]),
+        tid="all")
 
     banner = ('<div class="demo">Synthetic demo data. These are random price series, not real stocks.</div>'
               if demo else "")

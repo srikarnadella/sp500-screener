@@ -267,14 +267,18 @@ def analyze(ticker: str, df: pd.DataFrame, spy_ret: pd.Series | None) -> tuple[d
     trend_ok = {"BB dip": up, "50-day pullback": bool(up and last["sma50"] > last["sma200"]),
                 "10% drawdown": up}
     hi60 = float(close.iloc[-60:].max())
+    # Price-only trigger; ignores the rule's RSI < 40 leg, so this price alone can be reached
+    # without the signal actually firing.
     bb_trig = float(last["bb_lo"] + 0.10 * (last["bb_up"] - last["bb_lo"]))
-    trig = {"BB dip": bb_trig,
-            "50-day pullback": float(last["sma50"] + 0.75 * a),   # top edge of the zone
-            "10% drawdown": 0.90 * hi60}
+    # 50-day pullback is a two-sided zone: price can be above it (needs to fall) or,
+    # after a steeper drop, below it (needs to rise back up) -- pick the near edge either way.
+    lo50, hi50 = float(last["sma50"] - 0.75 * a), float(last["sma50"] + 0.75 * a)
+    pull_trig = hi50 if c0 > hi50 else lo50 if c0 < lo50 else c0
+    trig = {"BB dip": bb_trig, "50-day pullback": pull_trig, "10% drawdown": 0.90 * hi60}
     active = bool(sigs[best][-1])
     recent = bool(sigs[best][-3:].any())
-    # negative: price must fall this far to reach the trigger (0 if already at or below it)
-    gap = min(trig[best] / c0 - 1, 0.0)
+    # negative: price must fall to reach the trigger; positive: must rise; 0 if already there
+    gap = 0.0 if trig[best] == c0 else trig[best] / c0 - 1
     if active:
         status = "Signal today"
     elif recent:
@@ -356,16 +360,17 @@ def _ticker_table(df: pd.DataFrame, extras: bool = False, empty_msg: str | None 
     for _, r in df.iterrows():
         g = r["grade"]
         grade_txt = f"{g}<small>{int(r['score'])} of 5 tests</small>"
-        status = _esc(r["status"])
-        if r["status"] == "Armed" and np.isfinite(r["gap_to_trigger"]) and r["gap_to_trigger"] < 0:
-            status += f"<small>needs {r['gap_to_trigger'] * 100:.1f}% (${r['trigger_price']:.2f})</small>"
+        status = S._esc(r["status"])
+        if r["status"] == "Armed" and np.isfinite(r["gap_to_trigger"]) and r["gap_to_trigger"] != 0:
+            verb = "needs" if r["gap_to_trigger"] < 0 else "needs to rise"
+            status += f"<small>{verb} {r['gap_to_trigger'] * 100:+.1f}% (${r['trigger_price']:.2f})</small>"
         elif r["status"] in ("Signal today", "Signal in last 3 sessions"):
             status = f"<b>{status}</b>"
         cells = [
-            S._td(f"<b>{_esc(r['ticker'])}</b><small>{_esc(str(r.get('group', '')).split(' (')[0])}</small>", sort=_esc(r["ticker"])),
+            S._td(f"<b>{S._esc(r['ticker'])}</b><small>{S._esc(str(r.get('group', '')).split(' (')[0])}</small>", sort=S._esc(r["ticker"])),
             S._td(f"{r['close']:.2f}", sort=f"{r['close']:.2f}"),
-            S._td(status, cls="l", sort=_esc(r["status"])),
-            S._td(_esc(r["best_rule"]), cls="l", sort=_esc(r["best_rule"])),
+            S._td(status, cls="l", sort=S._esc(r["status"])),
+            S._td(S._esc(r["best_rule"]), cls="l", sort=S._esc(r["best_rule"])),
             S._td(grade_txt, sort=f"{r['score']}", cls="l"),
             S._td(f"{_p(r['win'], 0, False)} won<small>{int(r['trades'])} trades</small>",
                   sort=f"{r['win']:.3f}" if np.isfinite(r["win"]) else -1),
@@ -388,12 +393,8 @@ def _ticker_table(df: pd.DataFrame, extras: bool = False, empty_msg: str | None 
     if extras:
         heads += ["From 52w high", "Volatility", "Beta", "RSI"]
     if not rows:
-        return f'<div class="wrap"><p class="empty">{_esc(empty_msg or "Nothing meets the criteria today.")}</p></div>'
+        return f'<div class="wrap"><p class="empty">{S._esc(empty_msg or "Nothing meets the criteria today.")}</p></div>'
     return S._table(heads, rows)
-
-
-def _esc(x):
-    return S._esc(x)
 
 
 def render(res: pd.DataFrame, ctx: dict, vixtab: pd.DataFrame, null: dict, corr_pairs: list,
@@ -401,7 +402,8 @@ def render(res: pd.DataFrame, ctx: dict, vixtab: pd.DataFrame, null: dict, corr_
     graded = res[res["grade"].isin(["Consistent", "Mostly"])]
     catch = graded[graded["status"].isin(["Signal today", "Signal in last 3 sessions"])] \
         .sort_values(["score", "t_stat"], ascending=False)
-    watch = graded[(graded["status"] == "Armed") & (graded["gap_to_trigger"] > -0.10)] \
+    watch = graded[(graded["status"] == "Armed") & (graded["gap_to_trigger"] > -0.10)
+                  & (graded["gap_to_trigger"] <= 0)] \
         .sort_values("gap_to_trigger", ascending=False)
     mine = res[res["is_position"]].copy()
     mine["_o"] = mine["ticker"].map({t: i for i, t in enumerate(POSITIONS)})
@@ -413,7 +415,7 @@ def render(res: pd.DataFrame, ctx: dict, vixtab: pd.DataFrame, null: dict, corr_
 
     peer_blocks = ""
     for grp, sub in peers.groupby("group", sort=False):
-        peer_blocks += f"<h3>{_esc(grp)}</h3>{_ticker_table(sub)}"
+        peer_blocks += f"<h3>{S._esc(grp)}</h3>{_ticker_table(sub)}"
 
     overlap = ""
     if corr_pairs:
@@ -423,7 +425,7 @@ def render(res: pd.DataFrame, ctx: dict, vixtab: pd.DataFrame, null: dict, corr_
 
     vix_rows = []
     for _, r in vixtab.iterrows():
-        vix_rows.append("<tr>" + S._td(_esc(r["bucket"]), cls="l") + S._td(str(int(r["signals"])), sort=r["signals"]) \
+        vix_rows.append("<tr>" + S._td(S._esc(r["bucket"]), cls="l") + S._td(str(int(r["signals"])), sort=r["signals"]) \
             + S._td(str(int(r["days"])), sort=r["days"]) \
             + S._td(_p(r["excess"], 2), sort=f"{r['excess']:.4f}", cls=S._cls(r["excess"])) \
             + S._td(_p(r["positive"], 0, False), sort=f"{r['positive']:.3f}") + "</tr>")
@@ -431,7 +433,7 @@ def render(res: pd.DataFrame, ctx: dict, vixtab: pd.DataFrame, null: dict, corr_
                         "Avg 10-day return vs normal", "Share beating normal"], vix_rows)
 
     regime = f"""
-<section class="regime"><h2>VIX: {_esc(ctx['label'])}</h2>
+<section class="regime"><h2>VIX: {S._esc(ctx['label'])}</h2>
 <p class="note">Shown for context. The dip grades below are not adjusted for the VIX; the table near the bottom
 shows how dips actually performed in each VIX condition over the sample.</p>
 <dl class="stats">
@@ -530,11 +532,12 @@ def main() -> None:
         prices = S.download_prices(tickers, args.period)
         idx = S.download_prices(["^VIX", "^VIX3M"], "3y")
         vix_df, vix3m = idx.get("^VIX"), idx.get("^VIX3M")
-        if vix_df is None or "SPY" not in prices:
-            raise SystemExit("Could not download ^VIX or SPY; refusing to publish.")
+        if vix_df is None:
+            raise SystemExit("Could not download ^VIX; refusing to publish.")
         if len(prices) < 0.8 * len(tickers):
             raise SystemExit(f"Only {len(prices)}/{len(tickers)} tickers downloaded (Yahoo rate limit?). Try later.")
-        spy = prices["SPY"]["Close"].pct_change()
+        # SPY only feeds the beta/correlation columns, so its absence shouldn't abort the run.
+        spy = prices["SPY"]["Close"].pct_change() if "SPY" in prices else None
         missing = [t for t in tickers if t not in prices]
         if missing:
             print(f"[warn] no data for: {', '.join(missing)}", file=sys.stderr)
@@ -550,12 +553,15 @@ def main() -> None:
         if r:
             row, ev = r
             row["group"], row["is_position"] = group_of.get(t, ""), t in POSITIONS
+            row["last_date"] = df.index[-1]
             rows.append(row)
             events += ev
     if not rows:
         raise SystemExit("No tickers could be analyzed.")
     res = pd.DataFrame(rows)
-    asof = max(df.index[-1] for df in prices.values())
+    asof = res["last_date"].mode()[0]
+    res = res[res["last_date"] >= asof - pd.Timedelta(days=4)].copy()  # drop stale/halted names
+    res = res.drop(columns="last_date")
 
     ev_df = pd.DataFrame(events)
     vixtab = vix_study(ev_df[~ev_df["ticker"].isin(LEVERAGED_INVERSE)] if len(ev_df) else ev_df,

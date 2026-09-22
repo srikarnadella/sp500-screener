@@ -1,4 +1,4 @@
-"""Run with:  python -m pytest -q   (or just: python test_screener.py)"""
+"""Run with:  python test_screener.py   (or, if you have pytest installed: python -m pytest -q)"""
 import numpy as np
 import pandas as pd
 

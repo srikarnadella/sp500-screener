@@ -39,6 +39,7 @@ jobs:
         run: python dip_backtest.py
 
       - name: Commit results
+        if: always()
         run: |
           git config user.name "screener-bot"
           git config user.email "screener-bot@users.noreply.github.com"
@@ -47,5 +48,6 @@ jobs:
             echo "No changes to commit (market closed?)"
           else
             git commit -m "Daily screen $(date -u +%F)"
+            git pull --rebase
             git push
           fi
