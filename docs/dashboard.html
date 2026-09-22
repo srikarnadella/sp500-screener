@@ -1,0 +1,138 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Market dashboard, 2026-09-22</title><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet"><style>
+:root{--ink:#18212b;--muted:#5d6b7a;--paper:#f2f5f8;--panel:#fff;--line:#d8dfe6;
+--up:#0d7a5f;--down:#b3352d;--accent:#2557d6;--warn:#a86a00;--bar:#c6d3f3}
+@media (prefers-color-scheme:dark){:root{--ink:#e6ebf1;--muted:#93a1b1;--paper:#10161d;
+--panel:#171f28;--line:#2a3541;--up:#3ccf9f;--down:#f0766d;--accent:#7ea2ff;--warn:#e0a23a;--bar:#2b3f73}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+font:15px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+font-variant-numeric:tabular-nums}
+main{max-width:1180px;margin:0 auto;padding:28px 20px 64px}
+h1{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
+h2{font-size:18px;margin:0 0 4px;font-weight:600}
+.sub{color:var(--muted);margin:0 0 24px}
+.demo{background:var(--warn);color:#fff;padding:8px 14px;border-radius:4px;margin-bottom:20px;font-weight:600}
+.regime{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
+border-radius:4px;padding:20px 22px;margin-bottom:36px}
+.regime h2{font-size:22px}
+.regime .note{margin:2px 0 4px;max-width:70ch}
+.regime .mult{color:var(--muted);margin:0 0 18px}
+.gauge{max-width:560px;margin:0 0 4px}
+.track{position:relative;height:8px;border-radius:4px;background:var(--bar)}
+.mk{position:absolute;top:-5px;width:4px;height:18px;border-radius:2px;background:var(--accent);
+transform:translateX(-2px)}
+.ends{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:6px}
+dl.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 24px;margin:18px 0 0}
+dl.stats div{border-top:1px solid var(--line);padding-top:8px}
+dt{color:var(--muted);font-size:13px}
+dd{margin:0;font-size:20px;font-weight:600}
+section.block{margin-bottom:40px}
+.desc{color:var(--muted);margin:0 0 12px;max-width:75ch}
+.wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:4px}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th,td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+tbody tr:last-child td{border-bottom:0}
+th{font-weight:500;color:var(--muted);font-size:13px;background:var(--panel);position:sticky;top:0}
+th button{all:unset;cursor:pointer;padding:2px 0}
+th button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+th[aria-sort] button{color:var(--ink)}
+th[aria-sort="ascending"] button::after{content:" \25B2";font-size:10px}
+th[aria-sort="descending"] button::after{content:" \25BC";font-size:10px}
+td small{display:block;color:var(--muted);font-size:12px;line-height:1.2}
+td b{font-weight:600}
+.pos{color:var(--up)}.neg{color:var(--down)}
+.score{font-weight:600;font-size:16px}
+.rbar{display:inline-block;width:44px;height:6px;border-radius:3px;background:var(--bar);
+margin-right:8px;vertical-align:middle;overflow:hidden}
+.rbar i{display:block;height:100%;background:var(--accent)}
+.empty{padding:18px;color:var(--muted)}
+input[type=search]{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:4px;
+background:var(--panel);color:var(--ink);width:min(320px,100%)}
+input[type=search]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.filters{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:12px}
+.filters select,.filters input[type=number]{font:inherit;padding:7px 10px;border:1px solid var(--line);
+border-radius:4px;background:var(--panel);color:var(--ink)}
+.filters input[type=number]{width:4em}
+.filters label{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:14px}
+footer{color:var(--muted);font-size:13px;max-width:80ch;border-top:1px solid var(--line);padding-top:16px}
+footer p{margin:0 0 8px}
+</style></head><body><main>
+<h1>Market dashboard</h1>
+<p class="sub">Data through 2026-09-22. Merges the S&amp;P 500 screen, the dip research and the
+breadth/conviction gauge. Full detail in the two linked reports below.</p>
+
+<section class="regime" aria-label="Market conviction">
+  <h2>Conviction: 36/100, Cautious</h2>
+  <p class="note">VIX regime: Complacent. VIX is very low, leaving little cushion if sentiment turns. Fade scores are raised 15%, long scores cut 10%.</p>
+  <dl class="stats">
+    <div><dt>Breadth (%&gt;50d / %&gt;200d)</dt><dd>42</dd></div><div><dt>VIX regime</dt><dd>65</dd></div><div><dt>Share of stocks with a live long setup</dt><dd>2</dd></div>
+    <div><dt>VIX</dt><dd>14.63</dd></div>
+    <div><dt>Above 50-day / 200-day</dt><dd>31% / 52%</dd></div>
+    <div><dt>New 52-week highs / lows</dt><dd>6 / 5</dd></div>
+    <div><dt>McClellan Oscillator</dt><dd>-8</dd></div>
+    <div><dt>Zweig breadth thrust</dt><dd>No</dd></div>
+    <div><dt>High-yield credit spread</dt><dd>2.68<small>-0.02 pts / 20d</small></dd></div>
+  </dl>
+</section>
+<section class="block">
+  <h2>Sector relative strength</h2>
+  <div class="wrap"><table class="sortable"><thead><tr><th class="l"><button type="button">Most oversold sectors vs SPY</button></th><th class=""><button type="button">1m</button></th><th class=""><button type="button">3m</button></th></tr></thead><tbody><tr><td data-v="Consumer Discretionary" class="l">Consumer Discretionary</td><td data-v="-0.0794" class="neg">-7.9%</td><td data-v="-0.0835" class="neg">-8.4%</td></tr><tr><td data-v="Materials" class="l">Materials</td><td data-v="-0.0734" class="neg">-7.3%</td><td data-v="-0.0477" class="neg">-4.8%</td></tr><tr><td data-v="Consumer Staples" class="l">Consumer Staples</td><td data-v="-0.0683" class="neg">-6.8%</td><td data-v="-0.0580" class="neg">-5.8%</td></tr><tr><td data-v="Real Estate" class="l">Real Estate</td><td data-v="-0.0676" class="neg">-6.8%</td><td data-v="-0.1060" class="neg">-10.6%</td></tr><tr><td data-v="Industrials" class="l">Industrials</td><td data-v="-0.0672" class="neg">-6.7%</td><td data-v="-0.0858" class="neg">-8.6%</td></tr><tr><td data-v="Financials" class="l">Financials</td><td data-v="-0.0599" class="neg">-6.0%</td><td data-v="-0.0127" class="neg">-1.3%</td></tr></tbody></table></div>
+</section>
+<section class="block">
+  <h2>Top long setups</h2>
+  <p class="desc">From the <a href="index.html">S&amp;P 500 screen</a> -- full table there.</p>
+  <div class="wrap"><table class="sortable"><thead><tr><th class="l"><button type="button">Stock</button></th><th class=""><button type="button">Long score</button></th><th class=""><button type="button">Support</button></th><th class=""><button type="button">Trend</button></th></tr></thead><tbody><tr><td data-v="LYB"><b>LYB</b><small>LyondellBasell</small></td><td data-v="67.33"><span class="score">67</span></td><td data-v="SMA200" class="l">SMA200</td><td data-v="Up">Up</td></tr><tr><td data-v="CB"><b>CB</b><small>Chubb Limited</small></td><td data-v="63.81"><span class="score">64</span></td><td data-v="SMA100" class="l">SMA100</td><td data-v="Up">Up</td></tr><tr><td data-v="D"><b>D</b><small>Dominion Energy</small></td><td data-v="60.13"><span class="score">60</span></td><td data-v="SMA200" class="l">SMA200</td><td data-v="Mixed">Mixed</td></tr><tr><td data-v="FRT"><b>FRT</b><small>Federal Realty Investment Tr</small></td><td data-v="59.70"><span class="score">60</span></td><td data-v="SMA200" class="l">SMA200</td><td data-v="Up">Up</td></tr><tr><td data-v="AJG"><b>AJG</b><small>Arthur J. Gallagher &amp; Co.</small></td><td data-v="55.09"><span class="score">55</span></td><td data-v="SMA200" class="l">SMA200</td><td data-v="Mixed">Mixed</td></tr><tr><td data-v="TFC"><b>TFC</b><small>Truist Financial</small></td><td data-v="55.02"><span class="score">55</span></td><td data-v="SMA200" class="l">SMA200</td><td data-v="Mixed">Mixed</td></tr><tr><td data-v="RF"><b>RF</b><small>Regions Financial Corporatio</small></td><td data-v="51.58"><span class="score">52</span></td><td data-v="SMA200" class="l">SMA200</td><td data-v="Up">Up</td></tr><tr><td data-v="FAST"><b>FAST</b><small>Fastenal</small></td><td data-v="50.56"><span class="score">51</span></td><td data-v="SMA50" class="l">SMA50</td><td data-v="Up">Up</td></tr></tbody></table></div>
+</section>
+<section class="block">
+  <h2>Consistent dip-bouncers with a live signal</h2>
+  <p class="desc">From <a href="dip.html">dip research</a> -- sizing, confidence intervals and full detail there.</p>
+  <div class="wrap"><p class="empty">Nothing meets the criteria today.</p></div>
+</section>
+<section class="block">
+  <h2>Portfolio exposure by factor / sector group</h2>
+  <div class="wrap"><table class="sortable"><thead><tr><th class="l"><button type="button">Factor / sector group</button></th><th class=""><button type="button">Weight</button></th><th class=""><button type="button">Tickers</button></th></tr></thead><tbody><tr><td data-v="Mega-cap platforms (AMZN, GOOGL, META, MSFT)" class="l">Mega-cap platforms (AMZN, GOOGL, META, MSFT)</td><td data-v="36.36">36%</td><td class="l">GOOGL, META, AMZN, MSFT</td></tr><tr><td data-v="Index ETFs (SPY, VOO, QQQ)" class="l">Index ETFs (SPY, VOO, QQQ)</td><td data-v="27.27">27%</td><td class="l">SPY, VOO, QQQ</td></tr><tr><td data-v="Semiconductors and memory (NVDA, MU)" class="l">Semiconductors and memory (NVDA, MU)</td><td data-v="18.18">18%</td><td class="l">MU, NVDA</td></tr><tr><td data-v="Inverse ETFs (SDS)" class="l">Inverse ETFs (SDS)</td><td data-v="9.09">9%</td><td class="l">SDS</td></tr><tr><td data-v="Power and clean energy (BE)" class="l">Power and clean energy (BE)</td><td data-v="9.09">9%</td><td class="l">BE</td></tr></tbody></table></div>
+</section>
+<footer><p>Screening heuristics, not investment advice. See <a href="index.html">the S&amp;P 500 screen</a> and
+<a href="dip.html">the dip research</a> for methodology and limits.</p></footer></main><script>
+document.querySelectorAll('table.sortable').forEach(function(t){
+  t.querySelectorAll('th button').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var th=btn.parentElement, i=Array.prototype.indexOf.call(th.parentElement.children,th);
+      var asc=th.getAttribute('aria-sort')!=='ascending';
+      t.querySelectorAll('th').forEach(function(x){x.removeAttribute('aria-sort')});
+      th.setAttribute('aria-sort',asc?'ascending':'descending');
+      var tb=t.tBodies[0], rows=Array.prototype.slice.call(tb.rows);
+      rows.sort(function(a,b){
+        var av=a.cells[i].getAttribute('data-v'), bv=b.cells[i].getAttribute('data-v');
+        if(av===null){av=a.cells[i].textContent} if(bv===null){bv=b.cells[i].textContent}
+        var an=parseFloat(av), bn=parseFloat(bv), r;
+        if(!isNaN(an)&&!isNaN(bn)){r=an-bn}else{r=String(av).localeCompare(String(bv))}
+        return asc?r:-r;
+      });
+      rows.forEach(function(r){tb.appendChild(r)});
+    });
+  });
+});
+(function(){
+  var q=document.getElementById('filter');
+  if(!q) return;
+  var fs=document.getElementById('f-sector'), ft=document.getElementById('f-trend'),
+      fv=document.getElementById('f-vol'), fl=document.getElementById('f-long'),
+      ff=document.getElementById('f-fade');
+  function apply(){
+    var s=q.value.toLowerCase(), sec=fs.value, tr=ft.value, vol=fv.checked,
+        minL=parseFloat(fl.value)||0, minF=parseFloat(ff.value)||0;
+    document.querySelectorAll('#all tbody tr').forEach(function(r){
+      var ok=r.textContent.toLowerCase().indexOf(s)>-1
+        && (!sec||r.getAttribute('data-sector')===sec)
+        && (!tr||r.getAttribute('data-trend')===tr)
+        && (!vol||r.getAttribute('data-vol')==='1')
+        && parseFloat(r.getAttribute('data-long'))>=minL
+        && parseFloat(r.getAttribute('data-fade'))>=minF;
+      r.style.display=ok?'':'none';
+    });
+  }
+  [q,fs,ft,fv,fl,ff].forEach(function(el){el.addEventListener('input',apply);el.addEventListener('change',apply);});
+})();
+</script></body></html>
