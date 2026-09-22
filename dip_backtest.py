@@ -72,13 +72,19 @@ LEVERAGED_INVERSE = {"SDS", "SH", "SPXU", "SQQQ"}   # decay structurally; dip ru
 HORIZONS = (5, 10, 20)     # sessions held
 PRIMARY_H = 10
 COST = 0.001               # 0.1% round trip
+HIGH_COST = 0.003          # sensitivity check: does the edge survive 3x the assumed cost?
 OOS_FRAC = 0.40            # last 40% of history is the out-of-sample check
+WF_FOLDS = 5               # sequential folds for the walk-forward edge-sign check
+MC_DRAWS = 1000            # bootstrap resamples for the win-rate / edge confidence interval
 MIN_TRADES = 15
 MIN_WIN = 0.60
 MIN_T = 2.0
 MIN_YEARLY = 0.60
 MIN_YEARS = 4
 STRATEGIES = ["BB dip", "50-day pullback", "10% drawdown"]
+
+ACCOUNT_SIZE = 100_000     # edit to your actual account size; only used for the Kelly sizing suggestion
+KELLY_CAP = 0.25           # hard cap on suggested position size, regardless of what Kelly says
 
 
 # --------------------------------------------------------------------------- #
@@ -125,12 +131,33 @@ def pick_trades(sig: np.ndarray, H: int) -> np.ndarray:
     return np.array(out, dtype=int)
 
 
+def fold_edges(dates: pd.DatetimeIndex, e_idx: np.ndarray, base: np.ndarray, cost: float,
+              k: int = WF_FOLDS) -> list[float]:
+    """Split the history into k sequential folds and compute this rule's edge within each --
+    a stronger check than one static in/out-of-sample split. There is no walk-forward
+    re-optimization here because the three dip rules are fixed in advance by design (see the
+    module docstring); this instead checks the sign of the (untuned) edge holds up fold by fold."""
+    n = len(dates)
+    bounds = np.linspace(0, n, k + 1).astype(int)
+    out = []
+    for i in range(k):
+        lo, hi = bounds[i], bounds[i + 1]
+        e = e_idx[(e_idx >= lo) & (e_idx < hi)]
+        b = base[lo:hi]
+        if len(e) < 3 or not np.isfinite(b).any():
+            continue
+        out.append(float((base[e] - cost).mean() - np.nanmean(b)))
+    return out
+
+
 def summarize(dates: pd.DatetimeIndex, e_idx: np.ndarray, base: np.ndarray, mae: np.ndarray,
               cost: float = COST) -> dict:
     n = len(e_idx)
     empty = dict(n=0, win=np.nan, mean=np.nan, median=np.nan, base=np.nan, edge=np.nan, t=np.nan,
                  mae=np.nan, worst=np.nan, edge_is=np.nan, edge_oos=np.nan, n_oos=0,
-                 yearly=np.nan, years=0)
+                 yearly=np.nan, years=0, avg_win=np.nan, avg_loss=np.nan,
+                 wf_folds=0, wf_positive_frac=np.nan, edge_lo=np.nan, edge_hi=np.nan,
+                 win_lo=np.nan, win_hi=np.nan, edge_hc=np.nan)
     if n == 0:
         return empty
     r = base[e_idx] - cost
@@ -154,10 +181,61 @@ def summarize(dates: pd.DatetimeIndex, e_idx: np.ndarray, base: np.ndarray, mae:
             hits.append(r[m].mean() - np.nanmean(by) > 0)
     yearly = float(np.mean(hits)) if len(hits) >= MIN_YEARS else np.nan
 
+    wins, losses = r[r > 0], r[r <= 0]
+    avg_win = float(wins.mean()) if len(wins) else np.nan
+    avg_loss = float(-losses.mean()) if len(losses) else np.nan
+
+    folds = fold_edges(dates, e_idx, base, cost)
+    wf_frac = float(np.mean([f > 0 for f in folds])) if len(folds) >= 3 else np.nan
+
+    # Monte Carlo: bootstrap-resample the trades themselves to get a confidence interval on the
+    # win rate and edge, instead of trusting the single point estimate above.
+    if n >= 8:
+        rng = np.random.default_rng(42)
+        samp = r[rng.integers(0, n, size=(MC_DRAWS, n))]
+        boot_edge = samp.mean(axis=1) - bmean
+        boot_win = (samp > 0).mean(axis=1)
+        edge_lo, edge_hi = float(np.percentile(boot_edge, 5)), float(np.percentile(boot_edge, 95))
+        win_lo, win_hi = float(np.percentile(boot_win, 5)), float(np.percentile(boot_win, 95))
+    else:
+        edge_lo = edge_hi = win_lo = win_hi = np.nan
+
+    edge_hc = float((base[e_idx] - HIGH_COST).mean() - bmean)   # does the edge survive 3x the cost?
+
     return dict(n=n, win=float((r > 0).mean()), mean=float(r.mean()), median=float(np.median(r)),
                 base=bmean, edge=edge, t=float(t) if np.isfinite(t) else np.nan,
                 mae=float(np.mean(mae[e_idx])), worst=float(r.min()), edge_is=edge_is,
-                edge_oos=edge_oos, n_oos=len(oos_e), yearly=yearly, years=len(hits))
+                edge_oos=edge_oos, n_oos=len(oos_e), yearly=yearly, years=len(hits),
+                avg_win=avg_win, avg_loss=avg_loss, wf_folds=len(folds), wf_positive_frac=wf_frac,
+                edge_lo=edge_lo, edge_hi=edge_hi, win_lo=win_lo, win_hi=win_hi, edge_hc=edge_hc)
+
+
+def buy_hold_stats(close: pd.Series) -> dict:
+    """Total and annualized return of simply holding the stock over the same history used for
+    the backtest -- the benchmark every dip rule has to beat, not just its own baseline."""
+    years = (close.index[-1] - close.index[0]).days / 365.25
+    total = float(close.iloc[-1] / close.iloc[0] - 1)
+    cagr = float((1 + total) ** (1 / years) - 1) if years > 0.5 else np.nan
+    return dict(bh_total=total, bh_cagr=cagr)
+
+
+def kelly_fraction(win: float, avg_win: float, avg_loss: float, cap: float = KELLY_CAP) -> float:
+    """Half-Kelly position size: f* = win - (1-win)/R, R = avg win / avg loss, halved and capped
+    because the win-rate/payoff estimates behind it are themselves noisy."""
+    if not (np.isfinite(win) and np.isfinite(avg_win) and np.isfinite(avg_loss)) or avg_loss <= 0:
+        return np.nan
+    f = win - (1 - win) / (avg_win / avg_loss)
+    return float(np.clip(0.5 * f, 0, cap))
+
+
+def portfolio_exposure(res: pd.DataFrame) -> pd.DataFrame:
+    """Equal-weighted exposure by factor/sector group across your positions (reuses the existing
+    POSITION_GROUP/PEER_GROUPS labels). Equal-weighted because this script doesn't know your actual
+    dollar sizes per position -- edit ACCOUNT_SIZE and this if you want to weight it properly."""
+    mine = res[res["is_position"]]
+    g = mine.groupby("group").agg(n=("ticker", "size"), tickers=("ticker", lambda s: ", ".join(s)))
+    g["weight"] = 100 * g["n"] / len(mine)
+    return g.sort_values("weight", ascending=False).reset_index()
 
 
 def grade(s: dict) -> tuple[int, str]:
@@ -298,6 +376,7 @@ def analyze(ticker: str, df: pd.DataFrame, spy_ret: pd.Series | None) -> tuple[d
             beta = float(np.cov(j.iloc[:, 0], j.iloc[:, 1])[0, 1] / np.var(j.iloc[:, 1], ddof=1))
             corr = float(j.corr().iloc[0, 1])
     w = close.iloc[-252:]
+    kelly = kelly_fraction(st["win"], st["avg_win"], st["avg_loss"])
 
     row = dict(
         ticker=ticker, close=c0, best_rule=best, grade=tier, score=sc, trades=st["n"], win=st["win"],
@@ -311,7 +390,14 @@ def analyze(ticker: str, df: pd.DataFrame, spy_ret: pd.Series | None) -> tuple[d
         vol=vol, beta=beta, corr_spy=corr,
         max_dd_1y=float((w / w.cummax() - 1).min()),
         n_bars=len(d),
+        # backtest rigor: sequential-fold edge sign, bootstrap CI, cost sensitivity
+        wf_folds=st["wf_folds"], wf_positive_frac=st["wf_positive_frac"],
+        edge_lo=st["edge_lo"], edge_hi=st["edge_hi"], win_lo=st["win_lo"], win_hi=st["win_hi"],
+        edge_hc=st["edge_hc"],
+        # position sizing, once a signal fires
+        kelly_frac=kelly, kelly_dollars=kelly * ACCOUNT_SIZE if np.isfinite(kelly) else np.nan,
     )
+    row.update(buy_hold_stats(close))
     for s in STRATEGIES:                                          # per-rule detail for the CSV
         for H in HORIZONS:
             stt = res[(s, H)][0]
@@ -348,6 +434,63 @@ def vix_study(events: pd.DataFrame, vix: pd.Series) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _insider_sign(text: pd.Series) -> np.ndarray:
+    """+1 open-market purchase, -1 sale, 0 for grants/gifts/option exercises (not a market view)."""
+    t = text.astype(str)
+    return np.where(t.str.contains("Sale", case=False, na=False), -1,
+             np.where(t.str.contains("Purchase|Buy", case=False, na=False, regex=True), 1, 0))
+
+
+def extra_signals(ticker: str) -> dict:
+    """Per-ticker context that's too slow and flaky for the full 500-stock screener, but fine for
+    this ~50-ticker watchlist: short interest (days to cover), net insider buying/selling from SEC
+    Form 4 filings over the last 6 months, the near-term put/call volume ratio, and the next
+    earnings date. Every lookup is independently wrapped, so one flaky ticker or a Yahoo hiccup
+    just leaves that field blank instead of failing the run."""
+    out = dict(short_pct_float=np.nan, days_to_cover=np.nan, insider_net_shares=np.nan,
+               put_call=np.nan, earnings_date=pd.NaT)
+    import yfinance as yf
+    t = yf.Ticker(ticker)
+    try:
+        info = t.info or {}
+        out["short_pct_float"] = S._f(info.get("shortPercentOfFloat"))
+        out["days_to_cover"] = S._f(info.get("shortRatio"))
+    except Exception:
+        pass
+    try:
+        tx = t.insider_transactions
+        if tx is not None and len(tx):
+            tx = tx.copy()
+            tx["Start Date"] = pd.to_datetime(tx["Start Date"], errors="coerce")
+            recent = tx[tx["Start Date"] >= pd.Timestamp.today() - pd.Timedelta(days=180)]
+            # yfinance's "Transaction" column is blank; the actual description ("Sale at price...",
+            # "Stock Award(Grant)...") lives in "Text".
+            txt = recent["Text"] if "Text" in recent else pd.Series(dtype=str)
+            sign = _insider_sign(txt)
+            shares = pd.to_numeric(recent.get("Shares"), errors="coerce").fillna(0).to_numpy()
+            out["insider_net_shares"] = float((sign * shares).sum())
+    except Exception:
+        pass
+    try:
+        exps = t.options
+        if exps:
+            ch = t.option_chain(exps[0])
+            cv = pd.to_numeric(ch.calls["volume"], errors="coerce").sum()
+            pv = pd.to_numeric(ch.puts["volume"], errors="coerce").sum()
+            if cv > 0:
+                out["put_call"] = float(pv / cv)
+    except Exception:
+        pass
+    try:
+        cal = t.calendar
+        ed = cal.get("Earnings Date") if isinstance(cal, dict) else None
+        if ed:
+            out["earnings_date"] = pd.Timestamp(ed[0] if isinstance(ed, (list, tuple)) else ed)
+    except Exception:
+        pass
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Report
 # --------------------------------------------------------------------------- #
@@ -355,7 +498,8 @@ def _p(x, d=1, sign=True):
     return "-" if x is None or not np.isfinite(x) else (f"{x * 100:+.{d}f}%" if sign else f"{x * 100:.{d}f}%")
 
 
-def _ticker_table(df: pd.DataFrame, extras: bool = False, empty_msg: str | None = None) -> str:
+def _ticker_table(df: pd.DataFrame, extras: bool = False, sizing: bool = False,
+                  empty_msg: str | None = None) -> str:
     rows = []
     for _, r in df.iterrows():
         g = r["grade"]
@@ -366,6 +510,8 @@ def _ticker_table(df: pd.DataFrame, extras: bool = False, empty_msg: str | None 
             status += f"<small>{verb} {r['gap_to_trigger'] * 100:+.1f}% (${r['trigger_price']:.2f})</small>"
         elif r["status"] in ("Signal today", "Signal in last 3 sessions"):
             status = f"<b>{status}</b>"
+        if r.get("earnings_in_hold"):
+            status += ' <span class="warn">⚠ earnings in hold window</span>'
         cells = [
             S._td(f"<b>{S._esc(r['ticker'])}</b><small>{S._esc(str(r.get('group', '')).split(' (')[0])}</small>", sort=S._esc(r["ticker"])),
             S._td(f"{r['close']:.2f}", sort=f"{r['close']:.2f}"),
@@ -382,16 +528,41 @@ def _ticker_table(df: pd.DataFrame, extras: bool = False, empty_msg: str | None 
                   cls=S._cls(r["edge_oos"]) if np.isfinite(r["edge_oos"]) else ""),
             S._td(_p(r["mae"]), sort=f"{r['mae']:.4f}" if np.isfinite(r["mae"]) else -9, cls="neg"),
         ]
+        if sizing:
+            ci = (f"{_p(r['edge_lo'], 1)} to {_p(r['edge_hi'], 1)}" if np.isfinite(r["edge_lo"]) else "-")
+            wf = f"{int(round(r['wf_positive_frac'] * r['wf_folds']))}/{int(r['wf_folds'])}" \
+                if np.isfinite(r.get("wf_positive_frac", np.nan)) else "-"
+            kelly = (f"{r['kelly_frac'] * 100:.1f}%<small>${r['kelly_dollars']:,.0f} of ${ACCOUNT_SIZE:,.0f}</small>"
+                    if np.isfinite(r.get("kelly_frac", np.nan)) and r["kelly_frac"] > 0
+                    else "-<small>edge or sample too weak</small>")
+            cells += [S._td(kelly, sort=f"{r.get('kelly_frac', 0):.4f}" if np.isfinite(r.get("kelly_frac", np.nan)) else -1),
+                      S._td(ci, sort=f"{r['edge_lo']:.4f}" if np.isfinite(r["edge_lo"]) else -9),
+                      S._td(wf, sort=f"{r.get('wf_positive_frac', 0):.3f}" if np.isfinite(r.get("wf_positive_frac", np.nan)) else -1),
+                      S._td(_p(r["edge_hc"]), sort=f"{r['edge_hc']:.4f}" if np.isfinite(r["edge_hc"]) else -9,
+                            cls=S._cls(r["edge_hc"]) if np.isfinite(r["edge_hc"]) else "")]
         if extras:
             cells += [S._td(_p(r["off_52w_high"]), sort=f"{r['off_52w_high']:.4f}", cls=S._cls(r["off_52w_high"])),
                       S._td(_p(r["vol"], 0, False), sort=f"{r['vol']:.3f}"),
                       S._td(f"{r['beta']:.2f}" if np.isfinite(r["beta"]) else "-", sort=f"{r['beta']:.3f}" if np.isfinite(r["beta"]) else -9),
-                      S._td(f"{r['rsi']:.0f}", sort=f"{r['rsi']:.1f}")]
+                      S._td(f"{r['rsi']:.0f}", sort=f"{r['rsi']:.1f}"),
+                      S._td(_p(r.get("bh_cagr", np.nan), 0), sort=f"{r.get('bh_cagr', np.nan):.4f}" if np.isfinite(r.get("bh_cagr", np.nan)) else -9),
+                      S._td(f"{r['short_pct_float'] * 100:.1f}%" if np.isfinite(r.get("short_pct_float", np.nan)) else "-",
+                            sort=f"{r.get('short_pct_float', 0):.4f}" if np.isfinite(r.get("short_pct_float", np.nan)) else -1),
+                      S._td(f"{r['days_to_cover']:.1f}d" if np.isfinite(r.get("days_to_cover", np.nan)) else "-",
+                            sort=f"{r.get('days_to_cover', 0):.2f}" if np.isfinite(r.get("days_to_cover", np.nan)) else -1),
+                      S._td(f"{r['insider_net_shares']:+,.0f}" if np.isfinite(r.get("insider_net_shares", np.nan)) else "-",
+                            sort=f"{r.get('insider_net_shares', 0):.0f}" if np.isfinite(r.get("insider_net_shares", np.nan)) else -1e12,
+                            cls=S._cls(r["insider_net_shares"]) if np.isfinite(r.get("insider_net_shares", np.nan)) else ""),
+                      S._td(f"{r['put_call']:.2f}" if np.isfinite(r.get("put_call", np.nan)) else "-",
+                            sort=f"{r.get('put_call', 0):.3f}" if np.isfinite(r.get("put_call", np.nan)) else -1)]
         rows.append("<tr>" + "".join(cells) + "</tr>")
     heads = ["Stock", "Close", "Status", "Rule", "Grade", "Record", "Avg 10d", "Edge", "Edge, recent",
              "Dip after entry"]
+    if sizing:
+        heads += ["Suggested size (half-Kelly)", "Edge, 90% CI", "Walk-forward folds +", "Edge at 3x cost"]
     if extras:
-        heads += ["From 52w high", "Volatility", "Beta", "RSI"]
+        heads += ["From 52w high", "Volatility", "Beta", "RSI", "Buy & hold CAGR", "Short % float",
+                  "Days to cover", "Insider net shares (6mo)", "Put/Call vol"]
     if not rows:
         return f'<div class="wrap"><p class="empty">{S._esc(empty_msg or "Nothing meets the criteria today.")}</p></div>'
     return S._table(heads, rows)
@@ -415,13 +586,22 @@ def render(res: pd.DataFrame, ctx: dict, vixtab: pd.DataFrame, null: dict, corr_
 
     peer_blocks = ""
     for grp, sub in peers.groupby("group", sort=False):
-        peer_blocks += f"<h3>{S._esc(grp)}</h3>{_ticker_table(sub)}"
+        peer_blocks += f"<h3>{S._esc(grp)}</h3>{_ticker_table(sub, extras=True)}"
 
     overlap = ""
     if corr_pairs:
         items = ", ".join(f"{a} and {b} ({c:.2f})" for a, b, c in corr_pairs)
         overlap = f'<p class="desc"><b>Overlap in your holdings:</b> these pairs moved almost in lockstep over the last year: {items}. ' \
                   "Holding several of them adds less diversification than the ticker count suggests.</p>"
+
+    exposure = portfolio_exposure(res)
+    exp_rows = S._rows(exposure, [
+        lambda r: S._td(S._esc(r["group"]), cls="l", sort=S._esc(r["group"])),
+        lambda r: S._td(f"{r['weight']:.0f}%", sort=f"{r['weight']:.2f}"),
+        lambda r: S._td(str(int(r["n"])), sort=r["n"]),
+        lambda r: S._td(S._esc(r["tickers"]), cls="l"),
+    ])
+    exposure_tbl = S._table(["Factor / sector group", "Weight", "Positions", "Tickers"], exp_rows)
 
     vix_rows = []
     for _, r in vixtab.iterrows():
@@ -451,8 +631,10 @@ Analysis only, not investment advice.</p>
 {regime}
 <section class="block"><h2>Consistent dip-bouncers with a signal right now</h2>
 <p class="desc">Stocks that passed all or nearly all five consistency tests and whose best dip rule fired today
-or in the last three sessions. This is where a historically reliable bounce pattern is currently active.</p>
-{_ticker_table(catch, empty_msg="No consistent dip-bouncer has an active signal today.")}</section>
+or in the last three sessions. This is where a historically reliable bounce pattern is currently active.
+Suggested size is half-Kelly (win rate and average win/loss from the backtest, capped at {KELLY_CAP:.0%} of the
+account) against the {ACCOUNT_SIZE:,.0f} account size set at the top of the script -- edit it to your own.</p>
+{_ticker_table(catch, sizing=True, empty_msg="No consistent dip-bouncer has an active signal today.")}</section>
 <section class="block"><h2>Consistent dip-bouncers, armed and within 10% of their trigger</h2>
 <p class="desc">Same stocks, not yet triggered. The status column shows how far the price must fall to hit the rule.
 The trigger price is approximate because Bollinger Bands and the 60-day high move each day.</p>
@@ -462,6 +644,10 @@ The trigger price is approximate because Bollinger Bands and the 60-day high mov
 <p class="desc">SDS is a 2x inverse S&amp;P 500 fund. It loses value to daily reset decay over time, so dip rules
 do not apply to it the way they do to ordinary stocks.</p>
 {_ticker_table(mine, extras=True)}</section>
+<section class="block"><h2>Portfolio exposure by factor / sector group</h2>
+<p class="desc">Equal-weighted by ticker count, not dollars -- this script doesn't know your actual position sizes.
+Groups reuse the peer-group labels above (e.g. everything in "Mega-cap platforms" counts once each).</p>
+{exposure_tbl}</section>
 <section class="block"><h2>Sector peers</h2>
 <p class="desc">Stocks in the same sectors as your holdings, graded by the same rules.</p>
 {peer_blocks}</section>
@@ -483,15 +669,63 @@ earned Consistent or Mostly on at least one rule. Here {n_ok} of {len(res)} tick
 <p><b>What this can and cannot detect.</b> In simulations, the gate found a planted bounce pattern with a 3 to 5 day
 half-life in roughly 60% to 98% of series, but found almost none when reversion took 10 days or longer. So "no consistent
 dip-bouncers" means no fast, reliable bounce pattern, not that no pattern exists.</p>
+<p><b>Extra rigor.</b> "Edge, 90% CI" bootstrap-resamples the trades themselves ({MC_DRAWS} draws) to show a range on
+the edge, not just the point estimate -- a wide range crossing zero means the win rate is noisier than it looks.
+"Walk-forward folds+" splits history into {WF_FOLDS} sequential chunks and counts how many had a positive edge (out
+of however many had enough trades to check); there is no re-optimization step because the three rules are fixed by
+design. "Edge at 3x cost" reruns the same trades at a {HIGH_COST:.1%} round trip instead of {COST:.1%}, so you can see
+whether the edge is a real inefficiency or just barely clearing a thin assumed cost. "Buy & hold CAGR" is what simply
+holding the stock returned over the same history, the benchmark every dip rule has to beat.</p>
+<p><b>Paper-trading log.</b> Every day this runs live, today's Consistent/Mostly signals are logged to
+data/dip_signals_history.csv, and once {PRIMARY_H} sessions have passed for an older signal its actual outcome
+(entry at the next open, exit {PRIMARY_H} sessions later) is recorded to data/paper_trades.csv. That file is the
+honest check on whether these backtest numbers hold up in real time.</p>
 <p><b>Limits.</b> Past bounce behavior can stop working, especially around earnings, rate shocks, and regime changes.
-Buying at the next open ignores slippage on fast moves. This ignores taxes and position sizing. Not investment advice.</p>
+Buying at the next open ignores slippage on fast moves. Short interest, insider activity, put/call ratio and the next
+earnings date come from Yahoo Finance and can be missing or stale for some tickers. This ignores taxes. Not investment
+advice.</p>
 </footer>"""
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8">'
             f'<meta name="viewport" content="width=device-width,initial-scale=1">'
             f'<title>Dip research, {asof:%Y-%m-%d}</title>'
             f'<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">'
-            f'<style>{S.CSS}h3{{font-size:16px;margin:22px 0 8px;font-weight:600}}</style></head>'
+            f'<style>{S.CSS}h3{{font-size:16px;margin:22px 0 8px;font-weight:600}}'
+            f'.warn{{color:var(--warn);font-weight:600}}</style></head>'
             f'<body><main>{body}</main><script>{S.JS}</script></body></html>')
+
+
+def reconcile_paper_trades(prices: dict[str, pd.DataFrame], hist_path: Path, out_path: Path,
+                           H: int = PRIMARY_H, cost: float = COST) -> None:
+    """Live paper-trading log: for every logged signal old enough that its H-session hold has
+    actually elapsed, record what really happened (buy the next session's open, sell the close
+    H sessions later) so the backtest's expectations can be checked against reality over time.
+    Idempotent -- already-reconciled (date, ticker) pairs are skipped."""
+    if not hist_path.exists():
+        return
+    hist = pd.read_csv(hist_path, parse_dates=["date"])
+    done = pd.read_csv(out_path, parse_dates=["date"]) if out_path.exists() else pd.DataFrame(columns=["date", "ticker"])
+    seen = set(zip(done["date"].astype(str), done["ticker"])) if len(done) else set()
+    rows = []
+    for _, r in hist.iterrows():
+        key = (str(r["date"].date()), r["ticker"])
+        if key in seen or r["ticker"] not in prices:
+            continue
+        d = prices[r["ticker"]]
+        after = d.index[d.index > r["date"]]
+        if len(after) < H:                # hold period hasn't fully elapsed yet
+            continue
+        entry_date, exit_date = after[0], after[H - 1]
+        o = d.loc[entry_date, "Open"] if "Open" in d else d.loc[entry_date, "Close"]
+        c = d.loc[exit_date, "Close"]
+        ret = float(c / o - 1) - cost
+        rows.append(dict(date=r["date"].date(), ticker=r["ticker"], best_rule=r.get("best_rule", ""),
+                         grade=r.get("grade", ""), entry_date=entry_date.date(), exit_date=exit_date.date(),
+                         entry_price=round(float(o), 2), exit_price=round(float(c), 2),
+                         realized_return=round(ret, 4), win=bool(ret > 0)))
+    if rows:
+        new = pd.concat([done, pd.DataFrame(rows)], ignore_index=True) if len(done) else pd.DataFrame(rows)
+        new.to_csv(out_path, index=False)
+        print(f"Paper-trading log: reconciled {len(rows)} signal(s) whose {H}-session hold has elapsed.")
 
 
 # --------------------------------------------------------------------------- #
@@ -504,6 +738,8 @@ def main() -> None:
     ap.add_argument("--extra", default="", help="comma-separated extra tickers to include")
     ap.add_argument("--demo", action="store_true")
     ap.add_argument("--null-series", type=int, default=150, help="random-walk series for the false-positive check")
+    ap.add_argument("--skip-extra", action="store_true",
+                    help="skip short interest / insider / options / earnings lookups (faster)")
     args = ap.parse_args()
 
     out = Path(args.out)
@@ -563,6 +799,28 @@ def main() -> None:
     res = res[res["last_date"] >= asof - pd.Timedelta(days=4)].copy()  # drop stale/halted names
     res = res.drop(columns="last_date")
 
+    if not args.demo and not args.skip_extra:
+        print(f"Fetching short interest, insider activity, options skew and earnings dates for "
+              f"{len(res)} tickers...")
+        extras = {}
+        for i, t in enumerate(res["ticker"], 1):
+            try:
+                extras[t] = extra_signals(t)
+            except Exception as exc:
+                print(f"[warn] extra_signals({t}): {exc}", file=sys.stderr)
+            if i % 15 == 0:
+                print(f"  {i}/{len(res)}")
+        ex_df = pd.DataFrame.from_dict(extras, orient="index").reset_index().rename(columns={"index": "ticker"})
+        res = res.merge(ex_df, on="ticker", how="left")
+    else:
+        for c in ("short_pct_float", "days_to_cover", "insider_net_shares", "put_call"):
+            res[c] = np.nan
+        res["earnings_date"] = pd.NaT
+    res["earnings_date"] = pd.to_datetime(res["earnings_date"])
+    today = pd.Timestamp.today().normalize()
+    res["earnings_in_hold"] = res["earnings_date"].apply(
+        lambda dt: bool(pd.notna(dt) and 0 <= (dt - today).days <= PRIMARY_H * 1.4))
+
     ev_df = pd.DataFrame(events)
     vixtab = vix_study(ev_df[~ev_df["ticker"].isin(LEVERAGED_INVERSE)] if len(ev_df) else ev_df,
                        vix_df["Close"])
@@ -591,6 +849,7 @@ def main() -> None:
             old = pd.read_csv(hp)
             log = pd.concat([old[old["date"] != str(asof.date())], log], ignore_index=True)
         log.to_csv(hp, index=False)
+        reconcile_paper_trades(prices, hp, out / "data" / "paper_trades.csv")
 
     n_ok = int(res["grade"].isin(["Consistent", "Mostly"]).sum())
     print(f"\n{len(res)} tickers analyzed through {asof.date()}. {n_ok} graded Consistent/Mostly "

@@ -40,6 +40,9 @@ jobs:
       - name: Run dip research (portfolio + sector peers)
         run: python dip_backtest.py
 
+      - name: Build merged dashboard
+        run: python dashboard.py
+
       - name: Commit results
         if: always()
         run: |
