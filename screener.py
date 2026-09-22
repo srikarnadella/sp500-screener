@@ -240,15 +240,7 @@ def level_respect(high, low, close, level, atr, role,
     level = np.asarray(level, float)
     atr = np.asarray(atr, float)
 
-    prev_close = np.roll(close, 1)
-    prev_close[0] = np.nan
-    ok = np.isfinite(level) & np.isfinite(atr) & np.isfinite(prev_close)
-    with np.errstate(invalid="ignore"):
-        if role == "support":
-            cond = ok & (prev_close > level) & (low <= level + tol * atr)
-        else:
-            cond = ok & (prev_close < level) & (high >= level - tol * atr)
-
+    cond = _test_condition(high, low, close, level, atr, role, tol)
     held = broke = 0
     for t in _test_indices(cond, cooldown):
         outcome = _resolve_outcome(close, level, atr, t, role, move, horizon)
@@ -257,6 +249,19 @@ def level_respect(high, low, close, level, atr, role,
         held += outcome
         broke += 1 - outcome
     return held, broke
+
+
+def _test_condition(high: np.ndarray, low: np.ndarray, close: np.ndarray, level: np.ndarray,
+                    atr: np.ndarray, role: str, tol: float = TOL_ATR) -> np.ndarray:
+    """Boolean mask: bar reaches within `tol` ATRs of `level`, coming from the correct side
+    (from above for support, from below for resistance)."""
+    prev_close = np.roll(close, 1)
+    prev_close[0] = np.nan
+    ok = np.isfinite(level) & np.isfinite(atr) & np.isfinite(prev_close)
+    with np.errstate(invalid="ignore"):
+        if role == "support":
+            return ok & (prev_close > level) & (low <= level + tol * atr)
+        return ok & (prev_close < level) & (high >= level - tol * atr)
 
 
 def _test_indices(cond: np.ndarray, cooldown: int) -> list[int]:

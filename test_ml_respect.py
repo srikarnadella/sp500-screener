@@ -17,24 +17,22 @@ except ImportError:
     sys.exit(0)
 
 
-def _series(pattern, n_cycles):
-    close = np.array(pattern * n_cycles, float)
-    high, low = close + 0.5, close - 0.5
-    return high, low, close, np.full_like(close, 100.0), np.full_like(close, 2.0)
-
-
 def test_events_for_stock_matches_level_respect_counts():
     """build_events() must count held/broke exactly the way level_respect() does for every
-    level/role -- it's built from the same shared _test_indices/_resolve_outcome helpers, so this
-    also guards against the two drifting apart if either is edited later."""
+    level/role, on the bars where a trend-context feature (sma200/sma50) is actually available --
+    _events_for_stock() deliberately excludes earlier bars (see its comment), reproduced here by
+    masking the level to NaN there too, which suppresses the test the same way at the test-
+    condition stage rather than emulating the post-hoc skip (that would leave a discrepancy: a
+    cooldown-suppressing "test" that's later discarded shouldn't also cost a nearby real one)."""
     _, prices, _, _ = s.demo_data(n=3, seed=11)
     for ticker, df in prices.items():
         d = s.add_indicators(df)
         close, high, low = d["Close"].to_numpy(float), d["High"].to_numpy(float), d["Low"].to_numpy(float)
         atr = d["atr"].to_numpy(float)
+        has_trend = np.isfinite(d["sma200"].to_numpy(float)) & np.isfinite(d["sma50"].to_numpy(float))
         events = pd.DataFrame(m._events_for_stock(ticker, df))
         for name, (col, fam, roles) in s.LEVELS.items():
-            lvl = d[col].to_numpy(float)
+            lvl = np.where(has_trend, d[col].to_numpy(float), np.nan)
             for role in roles:
                 held_direct, broke_direct = s.level_respect(high, low, close, lvl, atr, role)
                 sub = events[(events["level"] == name) & (events["role"] == role)] if len(events) else events
@@ -55,7 +53,7 @@ def test_no_false_skill_on_shuffled_labels():
     shuffled["label"] = rng.permutation(shuffled["label"].to_numpy())
 
     for evaluator in (m.evaluate, m.evaluate_by_ticker):
-        report, _ = evaluator(shuffled)
+        report, _ = evaluator(prices, shuffled)
         assert report["ok"], report
         rel = (report["constant_brier"] - report["model_brier"]) / report["constant_brier"]
         assert abs(rel) < 0.01, f"{evaluator.__name__}: model 'beat' shuffled labels by {rel:+.1%}"
@@ -66,7 +64,7 @@ def test_detects_real_structure_on_unshuffled_data():
     non-trivial improvement over the constant baseline -- confirms the pipeline isn't just inert."""
     _, prices, _, _ = s.demo_data()
     events = m.build_events(prices)
-    report, _ = m.evaluate(events)
+    report, _ = m.evaluate(prices, events)
     assert report["ok"], report
     rel = (report["constant_brier"] - report["model_brier"]) / report["constant_brier"]
     assert rel > 0.03, f"model only improved on the constant baseline by {rel:+.1%}"

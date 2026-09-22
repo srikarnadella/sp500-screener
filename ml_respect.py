@@ -13,9 +13,13 @@ slice neither model has seen.
 
 This does NOT change screener.py's live scoring. It's a standalone benchmark --
 wire it in only if the printed numbers say the model actually wins. The heuristic
-side of the comparison is reconstructed per stock, per level/role, using only the
-training-period events (the same two-pass shrinkage analyze_stock does), so it's
-not a straw man: it's what the current pipeline would have believed at the time.
+side of the comparison is reconstructed per stock, per level/role, using only
+training-period data and the same two-pass shrinkage analyze_stock does -- including
+rebuilding the PLACEBO levels (shifted moving averages, off-multiple Bollinger bands)
+that Pass 1 actually shrinks toward, not the real levels' own pooled rate, which
+would silently reintroduce the "any price line holds by construction" bias the
+placebo mechanism exists to cancel. So it's not a straw man: it's what the current
+pipeline would have believed at the time.
 
 Run:  python ml_respect.py --demo     synthetic data (screener.demo_data), no network, fast
       python ml_respect.py            live S&P 500 history, writes data/ml_respect_report.json
@@ -56,19 +60,20 @@ def _events_for_stock(ticker: str, df: pd.DataFrame) -> list[dict]:
     high = d["High"].to_numpy(float)
     low = d["Low"].to_numpy(float)
     atr = d["atr"].to_numpy(float)
-    prev_close = np.roll(close, 1)
-    prev_close[0] = np.nan
+    sma200 = d["sma200"].to_numpy(float)
+    sma50 = d["sma50"].to_numpy(float)
+    # sma200/sma50 need up to 200/50 bars, well after MIN_BARS gates the whole series -- a test
+    # can otherwise fire before either exists, which would corrupt above_sma200/sma50_above_sma200
+    # to a false 0.0 (px > NaN is False in numpy, not NaN). Folded into the condition mask itself,
+    # not filtered per-event after the fact, so a suppressed early test doesn't also eat the
+    # cooldown window a later, valid test would otherwise get.
+    has_trend = np.isfinite(sma200) & np.isfinite(sma50)
 
     out = []
     for name, (col, fam, roles) in S.LEVELS.items():
         lvl = d[col].to_numpy(float)
-        ok = np.isfinite(lvl) & np.isfinite(atr) & np.isfinite(prev_close)
         for role in roles:
-            with np.errstate(invalid="ignore"):
-                if role == "support":
-                    cond = ok & (prev_close > lvl) & (low <= lvl + S.TOL_ATR * atr)
-                else:
-                    cond = ok & (prev_close < lvl) & (high >= lvl - S.TOL_ATR * atr)
+            cond = S._test_condition(high, low, close, lvl, atr, role) & has_trend
             for t in S._test_indices(cond, S.COOLDOWN):
                 label = S._resolve_outcome(close, lvl, atr, t, role)
                 if label is None:      # unresolved within HORIZON bars -- ignored, same as level_respect
@@ -80,8 +85,8 @@ def _events_for_stock(ticker: str, df: pd.DataFrame) -> list[dict]:
                     relvol=S._f(row["relvol"], 1.0), atr_pct=a / px if px else np.nan,
                     macd_pct=S._f(row["macd_hist"], 0.0) / px if px else np.nan,
                     bandwidth=S._f(row["bandwidth"]), dist_atr=(px - lvl[t]) / a if a else np.nan,
-                    chg1d=S._f(row["chg1d"], 0.0), above_sma200=float(px > row["sma200"]),
-                    sma50_above_sma200=float(row["sma50"] > row["sma200"]),
+                    chg1d=S._f(row["chg1d"], 0.0), above_sma200=float(px > sma200[t]),
+                    sma50_above_sma200=float(sma50[t] > sma200[t]),
                     weekday=float(d.index[t].weekday()),
                     is_support=float(role == "support"), is_ma=float(fam == "ma"),
                     level_rank=float(LEVEL_RANK[name]),
@@ -105,34 +110,61 @@ def build_events(prices: dict[str, pd.DataFrame]) -> pd.DataFrame:
 # --------------------------------------------------------------------------- #
 # The heuristic's own out-of-time prediction, for a fair comparison
 # --------------------------------------------------------------------------- #
-def heuristic_oos_probs(train: pd.DataFrame, test: pd.DataFrame) -> np.ndarray:
+def _placebo_family_rates(prices: dict[str, pd.DataFrame], train: pd.DataFrame) -> dict[tuple, float]:
+    """Per (ticker, family, role): the placebo-baseline hold rate analyze_stock's Pass 1 actually
+    computes -- from PLACEBO levels (moving averages shifted by PLACEBO_ATR, Bollinger bands at
+    other PLACEBO_SIGMA multiples), NEVER from the real levels' own outcomes (pooling real levels
+    together would just reintroduce the "any price line holds by construction" bias the placebo
+    mechanism exists to cancel -- an earlier version of this function did exactly that). Restricted
+    to each ticker's own bars at or before the last date it contributed to `train`, so this can't
+    see anything the model/heuristic being benchmarked wouldn't have."""
+    cutoff_by_ticker = train.groupby("ticker")["date"].max()
+    out = {}
+    for ticker, cutoff in cutoff_by_ticker.items():
+        df = prices.get(ticker)
+        if df is None:
+            continue
+        d = S.add_indicators(df)
+        d = d[d.index <= cutoff]
+        if len(d) < S.MIN_BARS:
+            continue
+        close, high, low = d["Close"].to_numpy(float), d["High"].to_numpy(float), d["Low"].to_numpy(float)
+        atr, sma20, bb_sd = d["atr"].to_numpy(float), d["sma20"].to_numpy(float), d["bb_sd"].to_numpy(float)
+        for name, (col, fam, roles) in S.LEVELS.items():
+            lvl = d[col].to_numpy(float)
+            for role in roles:
+                if fam == "ma":
+                    placebos = [lvl + m * atr for m in S.PLACEBO_ATR]
+                else:
+                    sign = -1 if role == "support" else 1
+                    placebos = [sma20 + sign * m * bb_sd for m in S.PLACEBO_SIGMA]
+                h = b = 0
+                for pl in placebos:
+                    ph, pb = S.level_respect(high, low, close, pl, atr, role)
+                    h, b = h + ph, b + pb
+                out[(ticker, fam, role)] = S.shrunk_rate(h, b, 0.5)
+    return out
+
+
+def heuristic_oos_probs(prices: dict[str, pd.DataFrame], train: pd.DataFrame, test: pd.DataFrame) -> np.ndarray:
     """What screener.py's placebo-baseline heuristic would have predicted for each held-out
-    event: this stock's own shrunk hold-rate for this level/role, computed from only that
-    stock's training-period events and shrunk toward that stock's own family baseline -- the
-    same two-pass math analyze_stock does, just restricted to data available before the held-out
-    period instead of the stock's full history."""
+    event: this stock's own shrunk hold-rate for this level/role (from training-period events
+    only), shrunk toward that stock's own PLACEBO-based family baseline -- the same two-pass math
+    analyze_stock does, just restricted to data available before the held-out period."""
     fam_of = {name: S.LEVELS[name][1] for name in S.LEVELS}
+    fam_rate = _placebo_family_rates(prices, train)
     market_base = float(train["label"].mean()) if len(train) else 0.5
-    train = train.assign(fam=train["level"].map(fam_of))
 
-    def _rates(keys):
-        g = train.groupby(keys)["label"].agg(held="sum", n="count").reset_index()
-        g["broke"] = g["n"] - g["held"]
-        return g
-
-    fam_g = _rates(["ticker", "fam", "role"])
-    fam_g["fam_rate"] = fam_g.apply(lambda r: S.shrunk_rate(r["held"], r["broke"], 0.5), axis=1)
-
-    lvl_g = _rates(["ticker", "level", "role"])
-    lvl_g["fam"] = lvl_g["level"].map(fam_of)
-    lvl_g = lvl_g.merge(fam_g[["ticker", "fam", "role", "fam_rate"]], on=["ticker", "fam", "role"], how="left")
-    lvl_g["fam_rate"] = lvl_g["fam_rate"].fillna(market_base)
+    lvl_g = train.assign(fam=train["level"].map(fam_of)).groupby(["ticker", "level", "role", "fam"])["label"] \
+        .agg(held="sum", n="count").reset_index()
+    lvl_g["broke"] = lvl_g["n"] - lvl_g["held"]
+    lvl_g["fam_rate"] = lvl_g.apply(lambda r: fam_rate.get((r["ticker"], r["fam"], r["role"]), market_base), axis=1)
     lvl_g["lvl_rate"] = lvl_g.apply(lambda r: S.shrunk_rate(r["held"], r["broke"], r["fam_rate"]), axis=1)
 
-    t = test.assign(fam=test["level"].map(fam_of)) \
-        .merge(lvl_g[["ticker", "level", "role", "lvl_rate"]], on=["ticker", "level", "role"], how="left") \
-        .merge(fam_g[["ticker", "fam", "role", "fam_rate"]], on=["ticker", "fam", "role"], how="left")
-    return t["lvl_rate"].fillna(t["fam_rate"]).fillna(market_base).to_numpy(float)
+    t = test.assign(fam=test["level"].map(fam_of))
+    t = t.merge(lvl_g[["ticker", "level", "role", "lvl_rate"]], on=["ticker", "level", "role"], how="left")
+    t["fam_fallback"] = t.apply(lambda r: fam_rate.get((r["ticker"], r["fam"], r["role"]), market_base), axis=1)
+    return t["lvl_rate"].fillna(t["fam_fallback"]).to_numpy(float)
 
 
 def _brier(y: np.ndarray, p: np.ndarray) -> float:
@@ -148,7 +180,7 @@ def train_model(train: pd.DataFrame):
     return clf
 
 
-def score(train: pd.DataFrame, test: pd.DataFrame) -> tuple[dict, object | None]:
+def score(prices: dict[str, pd.DataFrame], train: pd.DataFrame, test: pd.DataFrame) -> tuple[dict, object | None]:
     """Train on `train`, score on `test` (assumed disjoint and unseen by the model). Reports
     Brier score / accuracy for three things: the ML model, the reconstructed heuristic, and a
     naive constant baseline (always predict the training set's overall hold rate).
@@ -164,7 +196,7 @@ def score(train: pd.DataFrame, test: pd.DataFrame) -> tuple[dict, object | None]
 
     clf = train_model(train)
     model_p = clf.predict_proba(test[FEATURES])[:, 1]
-    heur_p = heuristic_oos_probs(train, test)
+    heur_p = heuristic_oos_probs(prices, train, test)
     const_p = np.full(len(test), float(train["label"].mean()))
     y = test["label"].to_numpy(float)
 
@@ -183,17 +215,17 @@ def score(train: pd.DataFrame, test: pd.DataFrame) -> tuple[dict, object | None]
     return report, clf
 
 
-def evaluate(events: pd.DataFrame) -> tuple[dict, object | None]:
+def evaluate(prices: dict[str, pd.DataFrame], events: pd.DataFrame) -> tuple[dict, object | None]:
     """Out-of-time benchmark: train on the earlier (1 - OOS_FRAC) of events by date, score on the
     later slice neither the model nor the heuristic reconstruction has seen."""
     events = events.dropna(subset=FEATURES + ["label"]).sort_values("date")
     if len(events) < MIN_TRAIN:
         return dict(ok=False, note=f"only {len(events)} resolved events, need >= {MIN_TRAIN}"), None
     split = int(len(events) * (1 - OOS_FRAC))
-    return score(events.iloc[:split], events.iloc[split:])
+    return score(prices, events.iloc[:split], events.iloc[split:])
 
 
-def evaluate_by_ticker(events: pd.DataFrame, seed: int = 0) -> tuple[dict, object | None]:
+def evaluate_by_ticker(prices: dict[str, pd.DataFrame], events: pd.DataFrame, seed: int = 0) -> tuple[dict, object | None]:
     """Stricter generalization check: hold out entire TICKERS instead of just later dates of
     tickers already seen in training. Answers 'does this transfer to a stock the model has never
     seen a single event from' -- catching entity-specific fingerprinting the time-based split
@@ -208,7 +240,7 @@ def evaluate_by_ticker(events: pd.DataFrame, seed: int = 0) -> tuple[dict, objec
     test = events[events["ticker"].isin(held_out)]
     if len(train) < MIN_TRAIN:
         return dict(ok=False, note=f"only {len(train)} training events after the ticker split"), None
-    return score(train, test)
+    return score(prices, train, test)
 
 
 def verdict(report: dict) -> str:
@@ -275,9 +307,9 @@ def main() -> None:
         report["verdict"] = v
         return report
 
-    time_report, clf = evaluate(events)
+    time_report, clf = evaluate(prices, events)
     time_report = _show("Out-of-time benchmark (same stocks, later dates)", time_report)
-    ticker_report, _ = evaluate_by_ticker(events)
+    ticker_report, _ = evaluate_by_ticker(prices, events)
     ticker_report = _show("Out-of-stock benchmark (never-seen tickers, stricter)", ticker_report)
     print("\nNot wired into screener.py's live scoring -- see the module docstring.")
 
