@@ -624,7 +624,8 @@ shows how dips actually performed in each VIX condition over the sample.</p>
 
     banner = ('<div class="demo">Synthetic demo data. These are random price series, not the real tickers. '
               'Every number below is meaningless except to show the layout.</div>' if demo else "")
-    body = f"""{banner}
+    body = f"""{S._nav("dip.html")}
+{banner}
 <h1>Dip-buying research: your holdings and sector peers</h1>
 <p class="sub">Data through {asof:%A, %B %d, %Y}. {len(res)} tickers, up to 10 years of daily history.
 Analysis only, not investment advice.</p>

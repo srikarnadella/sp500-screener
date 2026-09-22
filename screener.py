@@ -606,6 +606,10 @@ body{margin:0;background:var(--paper);color:var(--ink);
 font:15px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
 font-variant-numeric:tabular-nums}
 main{max-width:1180px;margin:0 auto;padding:28px 20px 64px}
+nav.pages{display:flex;gap:6px;margin:0 0 20px;flex-wrap:wrap}
+nav.pages a{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 12px;
+border:1px solid var(--line);border-radius:4px;background:var(--panel)}
+nav.pages a[aria-current]{color:var(--ink);border-color:var(--accent);font-weight:600}
 h1{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
 h2{font-size:18px;margin:0 0 4px;font-weight:600}
 .sub{color:var(--muted);margin:0 0 24px}
@@ -703,6 +707,18 @@ document.querySelectorAll('table.sortable').forEach(function(t){
 
 def _esc(x) -> str:
     return html.escape(str(x))
+
+
+PAGES = [("index.html", "S&P 500 screen"), ("dip.html", "Dip research"), ("dashboard.html", "Dashboard")]
+
+
+def _nav(active: str) -> str:
+    """Shared nav bar so the three reports (screener, dip research, dashboard) link to each
+    other -- otherwise each is only reachable if you already know its exact URL."""
+    links = "".join(
+        f'<a href="{href}"{" aria-current=\"page\"" if href == active else ""}>{_esc(label)}</a>'
+        for href, label in PAGES)
+    return f'<nav class="pages" aria-label="Reports">{links}</nav>'
 
 
 def _pct(x, d=1, sign=False) -> str:
@@ -904,6 +920,7 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, credit: dict, convi
     banner = ('<div class="demo">Synthetic demo data. These are random price series, not real stocks.</div>'
               if demo else "")
     body = f"""
+{_nav("index.html")}
 {banner}
 <h1>S&amp;P 500 level-respect screen</h1>
 <p class="sub">Data through {asof:%A, %B %d, %Y}. {n_screened} of {n_universe} stocks screened.</p>
