@@ -85,6 +85,36 @@ def test_detects_planted_level_but_not_noise():
     assert abs(ex(noise)) < 0.06, ex(noise)  # random walks show ~no excess
 
 
+def test_rel_strength_beats_or_lags_spy():
+    idx = pd.bdate_range("2026-01-01", periods=80)
+    spy = pd.Series(np.linspace(100, 110, 80), index=idx)         # SPY up 10%
+    winner = pd.Series(np.linspace(100, 130, 80), index=idx)      # up 30%: beats SPY
+    loser = pd.Series(np.linspace(100, 102, 80), index=idx)       # up 2%: lags SPY
+    assert s.rel_strength(winner, spy, 60) > 0.10
+    assert s.rel_strength(loser, spy, 60) < -0.03
+    assert np.isnan(s.rel_strength(winner, None, 60))             # no SPY series -> NaN, not a crash
+
+
+def test_breadth_series_counts_advancers_and_flags_thrust():
+    idx = pd.bdate_range("2026-01-01", periods=60)
+    up = pd.DataFrame({"Close": np.linspace(100, 120, 60)}, index=idx)     # rises every day
+    down = pd.DataFrame({"Close": np.linspace(100, 80, 60)}, index=idx)    # falls every day
+    b = s.breadth_series({"UP": up, "DOWN": down})
+    assert b["adv"] == 1 and b["decl"] == 1                        # one advancer, one decliner, every day
+    assert b["mcclellan"] == 0                                     # net advances constant at 0 -> oscillator flat
+    assert b["zweig_thrust"] is False                              # ratio never dips under 40% first
+
+
+def test_conviction_score_ranks_strong_market_above_weak():
+    breadth_strong = dict(above50=90, above200=90, zweig_thrust=True)
+    breadth_weak = dict(above50=10, above200=10, zweig_thrust=False)
+    strong = s.conviction_score(breadth_strong, {"key": "rolling_over"}, pd.DataFrame({"long_score": [80, 70, 60]}))
+    weak = s.conviction_score(breadth_weak, {"key": "stress"}, pd.DataFrame({"long_score": [10, 20, 5]}))
+    assert strong["score"] > weak["score"]
+    assert strong["label"] in ("Constructive", "Bullish")
+    assert weak["label"] in ("Bearish", "Cautious")
+
+
 def test_parses_yfinance_shaped_frames():
     idx = pd.bdate_range("2026-01-01", periods=5, tz="America/New_York")
     def ohlcv(base):

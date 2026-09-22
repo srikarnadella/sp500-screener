@@ -333,6 +333,79 @@ def vix_context(vix: pd.DataFrame, vix3m: pd.DataFrame | None) -> dict:
                 lo=float(yr.min()), hi=float(yr.max()), **REGIMES[key])
 
 
+FRED_HY_OAS_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=BAMLH0A0HYM2"
+
+
+def credit_spread_context(cache: Path) -> dict:
+    """High-yield vs Treasury option-adjusted spread (FRED series BAMLH0A0HYM2, no API key).
+    An early stress signal: spreads widen when credit markets get nervous, often before equities
+    react. Cached to disk like the S&P constituent list, so a FRED outage doesn't block the report."""
+    import requests
+
+    try:
+        r = requests.get(FRED_HY_OAS_URL, timeout=20)
+        r.raise_for_status()
+        df = pd.read_csv(io.StringIO(r.text)).rename(
+            columns={"observation_date": "date", "BAMLH0A0HYM2": "spread"})
+        df["spread"] = pd.to_numeric(df["spread"], errors="coerce")
+        df = df.dropna(subset=["spread"])
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        df.to_csv(cache, index=False)
+    except Exception as exc:
+        if not cache.exists():
+            return dict(ok=False, level=np.nan, chg5=np.nan, chg20=np.nan, note=f"FRED unavailable ({exc})")
+        print(f"[warn] could not refresh credit spread ({exc}); using cache", file=sys.stderr)
+        df = pd.read_csv(cache)
+    s = df["spread"].to_numpy(float)
+    if len(s) < 25:
+        return dict(ok=False, level=np.nan, chg5=np.nan, chg20=np.nan, note="not enough FRED history")
+    return dict(ok=True, level=float(s[-1]), chg5=float(s[-1] - s[-6]), chg20=float(s[-1] - s[-21]),
+                note="High-yield vs Treasury spread (FRED BAMLH0A0HYM2). Widening = credit stress.")
+
+
+def breadth_series(prices: dict[str, pd.DataFrame]) -> dict:
+    """Advance/decline breadth across every downloaded ticker: the McClellan Oscillator
+    (EMA19 - EMA39 of net advances) and a Zweig-style breadth thrust (the 10-day EMA of the
+    advance ratio flipping from under 40% to over 61.5% within 10 sessions -- a rare, historically
+    bullish "everyone buys at once" signal)."""
+    closes = pd.concat({t: d["Close"] for t, d in prices.items() if len(d) > 45}, axis=1)
+    closes = closes.sort_index().ffill(limit=3)
+    chg = closes.diff()
+    adv, decl = (chg > 0).sum(axis=1), (chg < 0).sum(axis=1)
+    net = (adv - decl).astype(float)
+    mcclellan = net.ewm(span=19, adjust=False).mean() - net.ewm(span=39, adjust=False).mean()
+    ratio10 = (adv / (adv + decl).replace(0, np.nan)).ewm(span=10, adjust=False).mean()
+    thrust = bool(len(ratio10) > 11 and ratio10.iloc[-11:].min() < 0.40 and ratio10.iloc[-1] > 0.615)
+    return dict(mcclellan=float(mcclellan.iloc[-1]) if len(mcclellan) else np.nan,
+                zweig_thrust=thrust, adv=int(adv.iloc[-1]) if len(adv) else 0,
+                decl=int(decl.iloc[-1]) if len(decl) else 0)
+
+
+def sector_strength(res: pd.DataFrame) -> pd.DataFrame:
+    """Which sectors are oversold vs SPY right now, not just in absolute terms."""
+    g = res.groupby("sector").agg(n=("ticker", "size"), rs_1m=("rs_1m", "mean"), rs_3m=("rs_3m", "mean"),
+                                  vs_sma50=("vs_sma50", "mean"), vs_sma200=("vs_sma200", "mean"))
+    return g.sort_values("rs_1m").reset_index()
+
+
+def conviction_score(breadth: dict, ctx: dict, res: pd.DataFrame) -> dict:
+    """Blend breadth, the VIX regime and how many stocks currently flash a real long setup into
+    one 0-100 read on whether this is a market where dip-buying is favored. A heuristic overlay
+    for the report header -- it does not feed back into individual stock scores."""
+    regime_pts = {"stress": 10, "rising": 35, "normal": 60, "complacent": 65, "rolling_over": 85}
+    b = 50 * np.clip(breadth["above50"] / 100, 0, 1) + 50 * np.clip(breadth["above200"] / 100, 0, 1)
+    density = 100 * (res["long_score"] >= 50).mean()
+    parts = [("Breadth (%>50d / %>200d)", float(b)),
+             ("VIX regime", float(regime_pts.get(ctx["key"], 50))),
+             ("Share of stocks with a live long setup", float(density))]
+    if breadth.get("zweig_thrust"):
+        parts.append(("Zweig breadth thrust firing", 100.0))
+    score = float(np.mean([p[1] for p in parts]))
+    label = ("Bullish" if score >= 75 else "Constructive" if score >= 60 else "Neutral"
+             if score >= 40 else "Cautious" if score >= 25 else "Bearish")
+    return dict(score=score, label=label, parts=parts)
+
+
 # --------------------------------------------------------------------------- #
 # Per-stock analysis
 # --------------------------------------------------------------------------- #
@@ -427,17 +500,34 @@ def analyze_stock(ticker: str, df: pd.DataFrame, spy_close: pd.Series | None = N
     else:
         trend = "Mixed"
 
+    # Multi-timeframe check: does the weekly trend agree with the daily setup? Weekly close vs.
+    # a 10-week (~50-day) average, requiring the average itself to be sloping the same way.
+    relvol_now = _f(last["relvol"], 1.0)
+    wk = d["Close"].resample("W-FRI").last().dropna()
+    weekly_up = weekly_down = None
+    if len(wk) >= 12:
+        wk_sma = wk.rolling(10).mean()
+        weekly_up = bool(wk.iloc[-1] > wk_sma.iloc[-1] > wk_sma.iloc[-2])
+        weekly_down = bool(wk.iloc[-1] < wk_sma.iloc[-1] < wk_sma.iloc[-2])
+    weekly_trend = "Up" if weekly_up else "Down" if weekly_down else "Mixed"
+    # unknown (too little weekly history) is treated as neutral, not a penalty
+    mtf_long_mult = 1.0 if weekly_up is None else (1.0 if weekly_up else 0.85)
+    mtf_fade_mult = 1.0 if weekly_down is None else (1.0 if weekly_down else 0.85)
+
+    # Volume confirmation: today's dip/stretch matters more on above-average volume.
+    vol_pts = 5 * np.clip((relvol_now - 1) / 0.5, 0, 1)
+
     # Long setup: pullback to a respected support inside an intact uptrend
     trend_pts = 10 * (px > sma200) + 8 * (sma50 > sma200) + 7 * (sma200 > sma200_prev)
     pull_pts = (10 * np.clip((55 - rsi) / 25, 0, 1)
                 + 10 * np.clip((0.35 - pctb) / 0.35, 0, 1))
-    long_raw = 0.55 * sup_score + trend_pts + pull_pts
+    long_raw = (0.55 * sup_score + trend_pts + pull_pts + vol_pts) * mtf_long_mult
 
     # Fade setup: stretched into a respected resistance, with weak trend/momentum
     weak_pts = 8 * (px < sma200) + 6 * (sma50 < sma200) + 6 * (macd_h < 0)
     ext_pts = (15 * np.clip((rsi - 55) / 25, 0, 1)
                + 10 * np.clip((pctb - 0.7) / 0.3, 0, 1))
-    fade_raw = 0.55 * res_score + weak_pts + ext_pts
+    fade_raw = (0.55 * res_score + weak_pts + ext_pts + vol_pts) * mtf_fade_mult
 
     # Compact "what does this stock respect" summary
     prof = []
@@ -468,6 +558,7 @@ def analyze_stock(ticker: str, df: pd.DataFrame, spy_close: pd.Series | None = N
         resist_score=res_score,
         long_raw=long_raw, fade_raw=fade_raw, respect_profile=profile,
         rs_1m=rel_strength(d["Close"], spy_close, 21), rs_3m=rel_strength(d["Close"], spy_close, 63),
+        weekly_trend=weekly_trend, vol_confirm=bool(relvol_now >= 1.2),
     )
     if broken:
         name, rate, n, dd, bs = max(broken, key=lambda z: z[1] - z[4])
@@ -536,8 +627,13 @@ margin-right:8px;vertical-align:middle;overflow:hidden}
 .rbar i{display:block;height:100%;background:var(--accent)}
 .empty{padding:18px;color:var(--muted)}
 input[type=search]{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:4px;
-background:var(--panel);color:var(--ink);width:min(320px,100%);margin-bottom:12px}
+background:var(--panel);color:var(--ink);width:min(320px,100%)}
 input[type=search]:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.filters{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:12px}
+.filters select,.filters input[type=number]{font:inherit;padding:7px 10px;border:1px solid var(--line);
+border-radius:4px;background:var(--panel);color:var(--ink)}
+.filters input[type=number]{width:4em}
+.filters label{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:14px}
 footer{color:var(--muted);font-size:13px;max-width:80ch;border-top:1px solid var(--line);padding-top:16px}
 footer p{margin:0 0 8px}
 """
@@ -562,13 +658,27 @@ document.querySelectorAll('table.sortable').forEach(function(t){
     });
   });
 });
-var q=document.getElementById('filter');
-if(q){q.addEventListener('input',function(){
-  var s=q.value.toLowerCase();
-  document.querySelectorAll('#all tbody tr').forEach(function(r){
-    r.style.display=r.textContent.toLowerCase().indexOf(s)>-1?'':'none';
-  });
-});}
+(function(){
+  var q=document.getElementById('filter');
+  if(!q) return;
+  var fs=document.getElementById('f-sector'), ft=document.getElementById('f-trend'),
+      fv=document.getElementById('f-vol'), fl=document.getElementById('f-long'),
+      ff=document.getElementById('f-fade');
+  function apply(){
+    var s=q.value.toLowerCase(), sec=fs.value, tr=ft.value, vol=fv.checked,
+        minL=parseFloat(fl.value)||0, minF=parseFloat(ff.value)||0;
+    document.querySelectorAll('#all tbody tr').forEach(function(r){
+      var ok=r.textContent.toLowerCase().indexOf(s)>-1
+        && (!sec||r.getAttribute('data-sector')===sec)
+        && (!tr||r.getAttribute('data-trend')===tr)
+        && (!vol||r.getAttribute('data-vol')==='1')
+        && parseFloat(r.getAttribute('data-long'))>=minL
+        && parseFloat(r.getAttribute('data-fade'))>=minF;
+      r.style.display=ok?'':'none';
+    });
+  }
+  [q,fs,ft,fv,fl,ff].forEach(function(el){el.addEventListener('input',apply);el.addEventListener('change',apply);});
+})();
 """
 
 
@@ -619,9 +729,11 @@ def _dist_cell(name, dist) -> str:
     return _td(f"{_esc(name)}<small>{dist:+.1f} ATR</small>", sort=_esc(name))
 
 
-def _rows(df: pd.DataFrame, cells) -> list[str]:
-    """Build <tr> strings, one per row, from a list of `(row) -> <td>...</td>` callables."""
-    return ["<tr>" + "".join(fn(r) for fn in cells) + "</tr>" for _, r in df.iterrows()]
+def _rows(df: pd.DataFrame, cells, attrs=None) -> list[str]:
+    """Build <tr> strings, one per row, from a list of `(row) -> <td>...</td>` callables.
+    `attrs`, if given, is `(row) -> ' data-x="y" ...'` for client-side filtering."""
+    a = attrs or (lambda r: "")
+    return [f"<tr{a(r)}>" + "".join(fn(r) for fn in cells) + "</tr>" for _, r in df.iterrows()]
 
 
 def _table(headers: list[str], rows: list[str], tid: str = "") -> str:
@@ -634,8 +746,9 @@ def _table(headers: list[str], rows: list[str], tid: str = "") -> str:
             f'<tbody>{"".join(rows)}</tbody></table></div>')
 
 
-def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, asof: pd.Timestamp,
-                n_screened: int, n_universe: int, top: int, demo: bool) -> str:
+def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, credit: dict, conviction: dict,
+                sector_tbl: pd.DataFrame, asof: pd.Timestamp, n_screened: int, n_universe: int,
+                top: int, demo: bool) -> str:
     # ---- regime strip
     span = max(ctx["hi"] - ctx["lo"], 1e-9)
     pos = float(np.clip((ctx["level"] - ctx["lo"]) / span, 0, 1)) * 100
@@ -655,11 +768,40 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, asof: pd.Timestamp,
     <div><dt>vs 20-day average</dt><dd>{(ctx['level'] / ctx['ma20'] - 1) * 100:+.0f}%</dd></div>
     <div><dt>5-day change</dt><dd>{ctx['chg5'] * 100:+.0f}%</dd></div>
     <div><dt>VIX / VIX3M</dt><dd>{term}</dd></div>
-    <div><dt>Above 50-day</dt><dd>{breadth['above50']:.0f}%</dd></div>
-    <div><dt>Above 200-day</dt><dd>{breadth['above200']:.0f}%</dd></div>
-    <div><dt>RSI under 30 / over 70</dt><dd>{breadth['oversold']} / {breadth['overbought']}</dd></div>
   </dl>
 </section>"""
+
+    # ---- market conviction / breadth strip
+    credit_dd = (f"{credit['level']:.2f}<small>{credit['chg20']:+.2f} pts / 20d</small>"
+                if credit["ok"] else "n/a")
+    conv_parts = "".join(f"<div><dt>{_esc(name)}</dt><dd>{val:.0f}</dd></div>" for name, val in conviction["parts"])
+    conviction_sec = f"""
+<section class="regime" aria-label="Market conviction">
+  <h2>Conviction: {conviction['score']:.0f}/100, {_esc(conviction['label'])}</h2>
+  <p class="note">Breadth, the VIX regime and the share of stocks with a live long setup, blended into one read
+  on whether this is a market where dip-buying is favored. Heuristic overlay, not a per-stock multiplier.</p>
+  <dl class="stats">
+    {conv_parts}
+    <div><dt>Above 50-day / 200-day</dt><dd>{breadth['above50']:.0f}% / {breadth['above200']:.0f}%</dd></div>
+    <div><dt>RSI under 30 / over 70</dt><dd>{breadth['oversold']} / {breadth['overbought']}</dd></div>
+    <div><dt>New 52-week highs / lows</dt><dd>{breadth['new_highs']} / {breadth['new_lows']}</dd></div>
+    <div><dt>McClellan Oscillator</dt><dd>{breadth['mcclellan']:+.0f}</dd></div>
+    <div><dt>Zweig breadth thrust</dt><dd>{"Firing" if breadth['zweig_thrust'] else "No"}</dd></div>
+    <div><dt>High-yield credit spread</dt><dd>{credit_dd}</dd></div>
+  </dl>
+</section>"""
+
+    sector_rows = _rows(sector_tbl, [
+        lambda r: _td(_esc(r["sector"]), cls="l", sort=_esc(r["sector"])),
+        lambda r: _td(str(int(r["n"])), sort=r["n"]),
+        lambda r: _td(_pct(r["rs_1m"], 1, True), sort=f"{r['rs_1m']:.4f}" if np.isfinite(r["rs_1m"]) else -9,
+                     cls=_cls(r["rs_1m"]) if np.isfinite(r["rs_1m"]) else ""),
+        lambda r: _td(_pct(r["rs_3m"], 1, True), sort=f"{r['rs_3m']:.4f}" if np.isfinite(r["rs_3m"]) else -9,
+                     cls=_cls(r["rs_3m"]) if np.isfinite(r["rs_3m"]) else ""),
+        lambda r: _td(_pct(r["vs_sma50"], 1, True), sort=f"{r['vs_sma50']:.4f}", cls=_cls(r["vs_sma50"])),
+        lambda r: _td(_pct(r["vs_sma200"], 1, True), sort=f"{r['vs_sma200']:.4f}", cls=_cls(r["vs_sma200"])),
+    ])
+    sector_tbl_html = _table(["Sector", "Stocks", "1m vs SPY", "3m vs SPY", "vs 50d", "vs 200d"], sector_rows)
 
     def sector_cell(r):
         return _td(_esc(r["sector"]), cls="l", sort=_esc(r["sector"]))
@@ -706,10 +848,15 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, asof: pd.Timestamp,
                   lambda r: _respect_cell(r["broken_rate"], r["broken_n"], r["broken_base"]),
                   rsi_cell, trend_cell]))
 
-    # ---- all stocks
+    # ---- all stocks (tagged with data-* attributes for the filter bar below)
+    def all_attrs(r):
+        return (f' data-sector="{_esc(r["sector"])}" data-trend="{_esc(r["trend"])}"'
+                f' data-long="{r["long_score"]:.1f}" data-fade="{r["fade_score"]:.1f}"'
+                f' data-vol="{1 if r["vol_confirm"] else 0}"')
+
     all_tbl = _table(
         ["Stock", "Sector", "Close", "1d", "Long", "Fade", "RSI", "%B", "vs 50d", "vs 200d",
-         "Trend", "Most-respected levels"],
+         "Trend", "Weekly", "Most-respected levels"],
         _rows(res.sort_values("long_score", ascending=False),
              [_stock_cell, sector_cell, close_cell, _chg_cell,
               lambda r: _td(f"{r['long_score']:.0f}", sort=f"{r['long_score']:.2f}"),
@@ -718,8 +865,22 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, asof: pd.Timestamp,
               lambda r: _td(_pct(r["vs_sma50"], 1, True), sort=f"{r['vs_sma50']:.4f}", cls=_cls(r["vs_sma50"])),
               lambda r: _td(_pct(r["vs_sma200"], 1, True), sort=f"{r['vs_sma200']:.4f}", cls=_cls(r["vs_sma200"])),
               trend_cell,
-              lambda r: _td(_esc(r["respect_profile"] or "none above 50%"), cls="l", sort=_esc(r["respect_profile"]))]),
+              lambda r: _td(_esc(r["weekly_trend"]), sort=_esc(r["weekly_trend"])),
+              lambda r: _td(_esc(r["respect_profile"] or "none above 50%"), cls="l", sort=_esc(r["respect_profile"]))],
+             attrs=all_attrs),
         tid="all")
+    sector_opts = "".join(f'<option value="{_esc(s)}">{_esc(s)}</option>'
+                          for s in sorted(res["sector"].dropna().unique()))
+    filters = f"""
+<div class="filters">
+  <input id="filter" type="search" placeholder="Filter by ticker, name, sector" aria-label="Filter stocks">
+  <select id="f-sector" aria-label="Filter by sector"><option value="">All sectors</option>{sector_opts}</select>
+  <select id="f-trend" aria-label="Filter by trend"><option value="">Any trend</option>
+    <option>Up</option><option>Mixed</option><option>Down</option></select>
+  <label><input type="checkbox" id="f-vol"> Volume confirmed</label>
+  <label>Min long <input type="number" id="f-long" min="0" max="100" value="0"></label>
+  <label>Min fade <input type="number" id="f-fade" min="0" max="100" value="0"></label>
+</div>"""
 
     banner = ('<div class="demo">Synthetic demo data. These are random price series, not real stocks.</div>'
               if demo else "")
@@ -728,6 +889,13 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, asof: pd.Timestamp,
 <h1>S&amp;P 500 level-respect screen</h1>
 <p class="sub">Data through {asof:%A, %B %d, %Y}. {n_screened} of {n_universe} stocks screened.</p>
 {regime}
+{conviction_sec}
+<section class="block">
+  <h2>Sector relative strength</h2>
+  <p class="desc">Each sector's average 1- and 3-month return minus SPY's, and average distance from the 50-/200-day
+  average. Sorted most-oversold-vs-SPY first.</p>
+  {sector_tbl_html}
+</section>
 <section class="block">
   <h2>Pullbacks to a respected support</h2>
   <p class="desc">Price is sitting on a level this stock has held historically, inside an intact uptrend and
@@ -748,7 +916,7 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, asof: pd.Timestamp,
 </section>
 <section class="block">
   <h2>All screened stocks</h2>
-  <input id="filter" type="search" placeholder="Filter by ticker, name, sector" aria-label="Filter stocks">
+  {filters}
   {all_tbl}
 </section>
 <footer>
@@ -824,26 +992,33 @@ def main() -> None:
 
     if args.demo:
         universe, prices, vix, vix3m = demo_data()
+        spy = prices[next(iter(prices))]["Close"]  # any series; demo credit/conviction numbers are illustrative
+        credit = dict(ok=False, level=np.nan, chg5=np.nan, chg20=np.nan, note="not fetched in --demo mode")
     else:
         print("Loading S&P 500 constituents...")
         universe = load_universe(Path(args.cache))
         print(f"Downloading {len(universe)} tickers ({args.period})...")
         prices = download_prices(universe["ticker"].tolist(), args.period)
-        idx = download_prices(["^VIX", "^VIX3M"], "2y")
+        idx = download_prices(["^VIX", "^VIX3M", "SPY"], "2y")
         vix, vix3m = idx.get("^VIX"), idx.get("^VIX3M")
+        spy = idx["SPY"]["Close"] if "SPY" in idx else None
         if vix is None or len(vix) < 30:
             raise SystemExit("Could not download ^VIX; refusing to publish a report without it.")
         if len(prices) < 0.8 * len(universe):
             raise SystemExit(f"Only {len(prices)}/{len(universe)} tickers downloaded; "
                              "Yahoo is probably rate-limiting this IP. Try again later.")
+        credit = credit_spread_context(out / "data" / "credit_spread.csv")
 
     ctx = vix_context(vix, vix3m)
     print(f"VIX {ctx['level']:.2f}, regime: {ctx['label']}")
 
+    # Per-ticker earnings-date lookups (500 extra network calls) are skipped here: they are slow
+    # and Yahoo already rate-limits the daily/period download at this universe size. dip_backtest.py
+    # covers earnings-date awareness for the much smaller position + peer list instead.
     rows = []
     for t, df in prices.items():
         try:
-            r = analyze_stock(t, df)
+            r = analyze_stock(t, df, spy)
         except Exception as exc:
             print(f"[warn] {t}: {exc}", file=sys.stderr)
             continue
@@ -864,7 +1039,12 @@ def main() -> None:
         above200=100 * (res["vs_sma200"] > 0).mean(),
         oversold=int((res["rsi"] < 30).sum()),
         overbought=int((res["rsi"] > 70).sum()),
+        new_highs=int((res["pos52"] >= 0.99).sum()),
+        new_lows=int((res["pos52"] <= 0.01).sum()),
+        **breadth_series(prices),
     )
+    sector_tbl = sector_strength(res)
+    conviction = conviction_score(breadth, ctx, res)
 
     # Outputs
     cols_first = ["ticker", "name", "sector", "close", "chg1d", "long_score", "fade_score", "trend",
@@ -873,7 +1053,16 @@ def main() -> None:
     csv = csv[cols_first + [c for c in csv.columns if c not in cols_first and c != "last_date"]]
     csv.to_csv(out / "data" / "screen_latest.csv", index=False, float_format="%.4f")
 
-    page = render_html(res, ctx, breadth, asof, len(res), len(universe), args.top, args.demo)
+    # Snapshot of market-level context, so dashboard.py can build a merged page without
+    # re-downloading anything.
+    import json
+    (out / "data" / "market_context.json").write_text(json.dumps(dict(
+        asof=str(asof.date()), vix=ctx, breadth=breadth, credit=credit, conviction=conviction,
+        sectors=sector_tbl.to_dict("records"),
+    ), default=float), encoding="utf-8")
+
+    page = render_html(res, ctx, breadth, credit, conviction, sector_tbl, asof, len(res), len(universe),
+                       args.top, args.demo)
     (out / "index.html").write_text(page, encoding="utf-8")
 
     if not args.demo:  # keep a log of what we flagged, so the ideas can be forward-tested later
