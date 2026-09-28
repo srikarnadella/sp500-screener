@@ -31,7 +31,8 @@ UA = {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit
 NASDAQ = "https://api.nasdaq.com/api/calendar/{kind}?date={date}"
 FOMC_URL = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
 ECON_DAYS, EARN_DAYS, FOMC_AHEAD = 14, 21, 3
-MAJOR_CAP = 100e9   # "major" earnings = S&P 500 member worth at least $100B
+MAJOR_CAP = 100e9   # the page lists S&P 500 members worth $100B+; the cache keeps all of them
+                    # so screener.py can flag any pick that reports soon
 
 # First match wins. Anything that matches none of these (Fed speeches, bill auctions, oil
 # inventories, regional surveys...) is dropped as noise.
@@ -95,7 +96,7 @@ def filter_earnings(rows: list[dict], date: str, members: dict[str, str]) -> lis
             cap = float(re.sub(r"[$,]", "", r.get("marketCap") or ""))
         except ValueError:
             continue
-        if sym and cap >= MAJOR_CAP:
+        if sym:
             out.append(dict(date=date, ticker=sym, name=members[sym], cap=cap,
                             time={"time-pre-market": "Before open", "time-after-hours": "After close"}
                                  .get(r.get("time"), "-"),
@@ -144,7 +145,7 @@ def render(data: dict, today: dt.date) -> str:
     econ = pd.DataFrame([e for e in data["econ"] if e["date"] >= t] + fomc,
                         columns=["date", "time", "event", "category", "consensus", "previous"])
     econ = econ.sort_values(["date", "time"], kind="stable")
-    earn = pd.DataFrame([e for e in data["earnings"] if e["date"] >= t],
+    earn = pd.DataFrame([e for e in data["earnings"] if e["date"] >= t and e["cap"] >= MAJOR_CAP],
                         columns=["date", "ticker", "name", "cap", "time", "eps"])
     earn = earn.sort_values(["date", "cap"], ascending=[True, False], kind="stable")
 

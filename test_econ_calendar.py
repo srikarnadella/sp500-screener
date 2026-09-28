@@ -36,7 +36,7 @@ def test_filter_econ_keeps_key_us_releases_once():
         ("CPI", "Inflation", "0.3%"), ("Nonfarm Payrolls", "Jobs", "")]
 
 
-def test_filter_earnings_major_sp500_only():
+def test_filter_earnings_sp500_only():
     rows = [dict(symbol="JPM", marketCap="$900,000,000,000", time="time-pre-market", epsForecast="$5.84"),
             dict(symbol="MKC", marketCap="$12,000,000,000", time="time-pre-market", epsForecast="$0.75"),
             dict(symbol="TSM", marketCap="$1,000,000,000,000", time="time-pre-market", epsForecast="$2"),
@@ -44,14 +44,17 @@ def test_filter_earnings_major_sp500_only():
             dict(symbol="BRK/B", marketCap="$1,000,000,000,000", time="time-not-supplied", epsForecast="")]
     got = c.filter_earnings(rows, "2026-10-13", {"JPM": "JPMorgan Chase", "MKC": "McCormick", "GS": "Goldman",
                                                  "BRK-B": "Berkshire Hathaway"})
-    assert [(e["ticker"], e["time"]) for e in got] == [("JPM", "Before open"), ("BRK-B", "-")]
+    assert [(e["ticker"], e["time"]) for e in got] == [("JPM", "Before open"), ("MKC", "Before open"), ("BRK-B", "-")]
 
 
 def test_render_drops_past_events():
     data = dict(econ=[dict(date="2026-09-01", time="08:30", event="Old CPI", category="Inflation",
                            consensus="", previous="")],
-                fomc=c.parse_fomc(FOMC_PAGE), earnings=[])
+                fomc=c.parse_fomc(FOMC_PAGE),
+                earnings=[dict(date="2026-10-13", ticker="JPM", name="JPMorgan", cap=9e11, time="-", eps="-"),
+                          dict(date="2026-10-13", ticker="MKC", name="McCormick", cap=1.2e10, time="-", eps="-")])
     page = c.render(data, dt.date(2026, 10, 1))
+    assert "JPMorgan" in page and "McCormick" not in page   # page shows only $100B+ names
     # fixture lists 2027 before 2025; only 2027 is upcoming, and it must be sorted by date
     assert "Old CPI" not in page and "Jan 27" in page and "May 1" in page and 'aria-current="page">Calendar' in page
 

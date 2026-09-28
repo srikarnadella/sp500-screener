@@ -131,6 +131,22 @@ def test_parses_yfinance_shaped_frames():
     assert s._split_download(pd.DataFrame(), ["AAA"]) == {}
 
 
+
+def test_earnings_notes_flags_only_reports_inside_the_window(tmp_path=None):
+    import json, tempfile
+    from pathlib import Path
+    cache = Path(tmp_path or tempfile.mkdtemp()) / "calendar.json"
+    cache.write_text(json.dumps({"earnings": [
+        {"date": "2026-10-13", "ticker": "JPM"},
+        {"date": "2026-10-06", "ticker": "JPM"},     # earliest upcoming date wins
+        {"date": "2026-11-30", "ticker": "NKE"},     # beyond ~2 weeks: not flagged
+        {"date": "2026-09-01", "ticker": "C"}]}))    # already past (stale cache): not flagged
+    notes = s.earnings_notes(pd.Series(["JPM", "NKE", "C", "MMM"]), cache, pd.Timestamp("2026-09-30"))
+    assert list(notes) == ["Earnings Tue Oct 6", "", "", ""]
+    # no calendar yet -> nothing flagged, nothing raised
+    assert list(s.earnings_notes(pd.Series(["JPM"]), cache.with_name("missing.json"), pd.Timestamp("2026-09-30"))) == [""]
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

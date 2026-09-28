@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import html
 import io
+import json
 import sys
 import time
 from pathlib import Path
@@ -760,8 +761,28 @@ def _td(content: str, sort=None, cls: str = "") -> str:
 
 
 def _stock_cell(r) -> str:
-    return _td(f"<b>{_esc(r['ticker'])}</b><small>{_esc(str(r.get('name', ''))[:28])}</small>",
+    note = r.get("earnings_note")
+    warn = f'<small class="warn">{_esc(note)}</small>' if isinstance(note, str) and note else ""
+    return _td(f"<b>{_esc(r['ticker'])}</b><small>{_esc(str(r.get('name', ''))[:28])}</small>{warn}",
                sort=_esc(r["ticker"]))
+
+
+def earnings_notes(tickers: pd.Series, cache: Path, today: pd.Timestamp,
+                   window_days: int = round(HORIZON * 1.4)) -> pd.Series:
+    """'Earnings Tue Oct 13' for each ticker reporting within the respect test's own HORIZON-bar
+    window (~2 weeks), else ''. An earnings gap can blow straight through any level, and the
+    backtest doesn't model that. Reads econ_calendar.py's cache (every S&P 500 member, ~3 weeks
+    out), so no per-ticker lookups; if it's missing, nothing is flagged."""
+    try:
+        rows = json.loads(cache.read_text())["earnings"]
+    except (OSError, ValueError, KeyError):
+        return pd.Series("", index=tickers.index)
+    nxt = {}
+    for e in sorted(rows, key=lambda e: e["date"]):
+        d = pd.Timestamp(e["date"])
+        if 0 <= (d - today.normalize()).days <= window_days:
+            nxt.setdefault(e["ticker"], f"Earnings {d:%a %b} {d.day}")
+    return tickers.map(nxt).fillna("")
 
 
 def _chg_cell(r) -> str:
@@ -953,7 +974,8 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, credit: dict, convi
 <section class="block">
   <h2>Pullbacks to a respected support</h2>
   <p class="desc">Price is sitting on a level this stock has held historically, inside an intact uptrend and
-  with a pulled-back RSI or Bollinger %B. Ranked by VIX-adjusted long score.</p>
+  with a pulled-back RSI or Bollinger %B. Ranked by VIX-adjusted long score. <span class="warn">Earnings</span>
+  under a ticker means it reports within the next ~2 weeks, where a gap can ignore any level.</p>
   {long_tbl}
 </section>
 <section class="block">
@@ -1085,6 +1107,7 @@ def main() -> None:
     res = pd.DataFrame(rows).merge(universe, on="ticker", how="left")
     asof = pd.Series(res["last_date"]).mode()[0]
     res = res[res["last_date"] >= asof - pd.Timedelta(days=4)].copy()  # drop stale/halted names
+    res["earnings_note"] = earnings_notes(res["ticker"], out / "data" / "calendar.json", pd.Timestamp.today())
     res["long_score"] = (res["long_raw"] * ctx["long"]).clip(upper=100)
     res["fade_score"] = (res["fade_raw"] * ctx["fade"]).clip(upper=100)
 
@@ -1109,7 +1132,6 @@ def main() -> None:
 
     # Snapshot of market-level context, so dashboard.py can build a merged page without
     # re-downloading anything.
-    import json
     (out / "data" / "market_context.json").write_text(json.dumps(dict(
         asof=str(asof.date()), vix=ctx, breadth=breadth, credit=credit, conviction=conviction,
         sectors=sector_tbl.to_dict("records"),

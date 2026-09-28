@@ -60,7 +60,9 @@ python screener.py && python dip_backtest.py && python dashboard.py
 
 `econ_calendar.py` writes `docs/calendar.html`: the next two weeks of key US releases (jobs, CPI/PPI/PCE,
 GDP, retail sales, ISM, sentiment) with consensus and previous values, the next three FOMC rate decisions,
-and earnings dates for S&P 500 companies worth $100B+ over the next three weeks. It uses Nasdaq's public
+and earnings dates for S&P 500 companies worth $100B+ over the next three weeks. It saves earnings for
+every S&P 500 member, and `screener.py` uses that to flag picks that report within the ~2-week window its
+level test measures (an earnings gap can ignore any level), so run it before the screener. It uses Nasdaq's public
 calendar API and the Fed's FOMC page (no API keys), and falls back to `docs/data/calendar.json` if a fetch fails.
 
 ```bash
