@@ -627,7 +627,7 @@ shows how dips actually performed in each VIX condition over the sample.</p>
     body = f"""{S._nav("dip.html")}
 {banner}
 <h1>Dip-buying research: your holdings and sector peers</h1>
-<p class="sub">Data through {asof:%A, %B %d, %Y}. {len(res)} tickers, up to 10 years of daily history.
+<p class="sub" data-asof="{asof:%Y-%m-%d}">Data through {asof:%A, %B %d, %Y}. {len(res)} tickers, up to 10 years of daily history.
 Analysis only, not investment advice.</p>
 {regime}
 <section class="block"><h2>Consistent dip-bouncers with a signal right now</h2>
@@ -691,7 +691,7 @@ advice.</p>
             f'<title>Dip research, {asof:%Y-%m-%d}</title>'
             f'<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">'
             f'<style>{S.CSS}h3{{font-size:16px;margin:22px 0 8px;font-weight:600}}'
-            f'.warn{{color:var(--warn);font-weight:600}}</style></head>'
+            f'</style></head>'
             f'<body><main>{body}</main><script>{S.JS}</script></body></html>')
 
 

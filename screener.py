@@ -613,7 +613,7 @@ nav.pages a[aria-current]{color:var(--ink);border-color:var(--accent);font-weigh
 h1{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
 h2{font-size:18px;margin:0 0 4px;font-weight:600}
 .sub{color:var(--muted);margin:0 0 24px}
-.demo{background:var(--warn);color:#fff;padding:8px 14px;border-radius:4px;margin-bottom:20px;font-weight:600}
+.demo,.stale{background:var(--warn);color:#fff;padding:8px 14px;border-radius:4px;margin-bottom:20px;font-weight:600}
 .regime{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
 border-radius:4px;padding:20px 22px;margin-bottom:36px}
 .regime h2{font-size:22px}
@@ -657,6 +657,7 @@ input[type=search]:focus-visible{outline:2px solid var(--accent);outline-offset:
 border-radius:4px;background:var(--panel);color:var(--ink)}
 .filters input[type=number]{width:4em}
 .filters label{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:14px}
+.warn{color:var(--warn);font-weight:600}
 footer{color:var(--muted);font-size:13px;max-width:80ch;border-top:1px solid var(--line);padding-top:16px}
 footer p{margin:0 0 8px}
 """
@@ -681,6 +682,22 @@ document.querySelectorAll('table.sortable').forEach(function(t){
     });
   });
 });
+(function(){
+  // Stale-data banner: pages are static, so if the daily job stops, nothing else would say so.
+  // Warn once 2+ weekdays have passed since the data date (1 is normal: the morning run uses
+  // the prior close; 2 leaves room for a market holiday).
+  var el=document.querySelector('[data-asof]');
+  if(!el) return;
+  var d=new Date(el.getAttribute('data-asof')+'T00:00:00'), today=new Date(), n=0;
+  today.setHours(0,0,0,0);
+  for(d.setDate(d.getDate()+1); d<today; d.setDate(d.getDate()+1)){ if(d.getDay()%6) n++; }
+  if(n<2) return;
+  var b=document.createElement('div');
+  b.className='stale'; b.setAttribute('role','status');
+  b.textContent='This data is from '+el.getAttribute('data-asof')+', '+n+' weekdays ago. The daily job may have '
+    +'stopped: check the Actions tab on GitHub.';
+  el.parentNode.insertBefore(b, document.querySelector('h1'));
+})();
 (function(){
   var q=document.getElementById('filter');
   if(!q) return;
@@ -924,7 +941,7 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, credit: dict, convi
 {_nav("index.html")}
 {banner}
 <h1>S&amp;P 500 level-respect screen</h1>
-<p class="sub">Data through {asof:%A, %B %d, %Y}. {n_screened} of {n_universe} stocks screened.</p>
+<p class="sub" data-asof="{asof:%Y-%m-%d}">Data through {asof:%A, %B %d, %Y}. {n_screened} of {n_universe} stocks screened.</p>
 {regime}
 {conviction_sec}
 <section class="block">

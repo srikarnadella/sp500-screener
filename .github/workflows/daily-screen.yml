@@ -49,8 +49,9 @@ jobs:
       - name: Build merged dashboard
         run: python dashboard.py
 
+      # No `if: always()`: when any step fails, publish nothing rather than a mix of fresh and
+      # stale pages. The stale-data banner on each page makes a missed day visible.
       - name: Commit results
-        if: always()
         run: |
           git config user.name "screener-bot"
           git config user.email "screener-bot@users.noreply.github.com"

@@ -97,7 +97,7 @@ def build(out: Path) -> str:
     body = f"""
 {S._nav("dashboard.html")}
 <h1>Market dashboard</h1>
-<p class="sub">Data through {S._esc(ctx['asof'])}. Merges the S&amp;P 500 screen, the dip research and the
+<p class="sub" data-asof="{S._esc(ctx['asof'])}">Data through {S._esc(ctx['asof'])}. Merges the S&amp;P 500 screen, the dip research and the
 breadth/conviction gauge. Full detail in the two linked reports below.</p>
 {header}
 <section class="block">

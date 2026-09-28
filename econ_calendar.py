@@ -166,7 +166,7 @@ def render(data: dict, today: dt.date) -> str:
     body = f"""
 {S._nav("calendar.html")}
 <h1>Market calendar</h1>
-<p class="sub">Updated {today:%a %b} {today.day}, {today.year}. Times are US Eastern.</p>
+<p class="sub" data-asof="{t}">Updated {today:%a %b} {today.day}, {today.year}. Times are US Eastern.</p>
 <section class="block">
   <h2>Economic releases and Fed decisions</h2>
   <p class="desc">Jobs, inflation, growth and sentiment releases for the next {ECON_DAYS} days, plus the next
