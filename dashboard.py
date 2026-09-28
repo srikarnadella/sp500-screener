@@ -13,13 +13,16 @@ screener.py and dip_backtest.py already write, so run those first:
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
 
 import dip_backtest as D
+import econ_calendar as C
 import screener as S
 
 
@@ -86,6 +89,22 @@ def build(out: Path) -> str:
     ])
     catch_tbl = S._table(["Stock", "Grade", "Rule", "Status", "Record"], catch_rows)
 
+    # Optional: econ_calendar.py's cache. Missing just means no "coming up" section.
+    cal_path = out / "data" / "calendar.json"
+    coming = ""
+    if cal_path.exists():
+        today = dt.datetime.now(ZoneInfo("America/New_York")).date()
+        econ, earn = C.upcoming(json.loads(cal_path.read_text()), today, days=7, also=tuple(D.POSITIONS))
+        coming = f"""
+<section class="block">
+  <h2>Coming up this week</h2>
+  <p class="desc">Key releases, Fed decisions, and earnings from $100B+ names or your holdings over the next
+  7 days. Full list on the <a href="calendar.html">calendar</a>.</p>
+  {C.econ_table(econ, "No key releases in the next 7 days.")}
+  <div style="height:12px"></div>
+  {C.earnings_table(earn, "No major or held-stock earnings in the next 7 days.")}
+</section>"""
+
     exposure = D.portfolio_exposure(dip)
     exp_rows = S._rows(exposure, [
         lambda r: S._td(S._esc(r["group"]), cls="l", sort=S._esc(r["group"])),
@@ -100,6 +119,7 @@ def build(out: Path) -> str:
 <p class="sub" data-asof="{S._esc(ctx['asof'])}">Data through {S._esc(ctx['asof'])}. Merges the S&amp;P 500 screen, the dip research and the
 breadth/conviction gauge. Full detail in the two linked reports below.</p>
 {header}
+{coming}
 <section class="block">
   <h2>Sector relative strength</h2>
   {sector_tbl}

@@ -1,7 +1,7 @@
 {
  "econ": [
   {
-   "date": "2026-09-30",
+   "date": "2026-09-29",
    "time": "10:00",
    "event": "CB Consumer Confidence",
    "category": "Sentiment",
@@ -9,7 +9,7 @@
    "previous": "89.4"
   },
   {
-   "date": "2026-09-30",
+   "date": "2026-09-29",
    "time": "10:00",
    "event": "JOLTS Job Openings",
    "category": "Jobs",
@@ -17,7 +17,7 @@
    "previous": "7.271M"
   },
   {
-   "date": "2026-10-01",
+   "date": "2026-09-30",
    "time": "08:15",
    "event": "ADP Nonfarm Employment Change",
    "category": "Jobs",
@@ -25,7 +25,7 @@
    "previous": "38K"
   },
   {
-   "date": "2026-10-01",
+   "date": "2026-09-30",
    "time": "08:30",
    "event": "Core PCE Price Index",
    "category": "Inflation",
@@ -33,7 +33,7 @@
    "previous": "0.2%"
   },
   {
-   "date": "2026-10-01",
+   "date": "2026-09-30",
    "time": "08:30",
    "event": "GDP",
    "category": "Growth",
@@ -41,7 +41,7 @@
    "previous": "1.5%"
   },
   {
-   "date": "2026-10-02",
+   "date": "2026-10-01",
    "time": "08:30",
    "event": "Initial Jobless Claims",
    "category": "Jobs",
@@ -49,7 +49,7 @@
    "previous": "197K"
   },
   {
-   "date": "2026-10-02",
+   "date": "2026-10-01",
    "time": "10:00",
    "event": "ISM Manufacturing PMI",
    "category": "Growth",
@@ -57,7 +57,7 @@
    "previous": "54.6"
   },
   {
-   "date": "2026-10-03",
+   "date": "2026-10-02",
    "time": "08:30",
    "event": "Average Hourly Earnings",
    "category": "Jobs",
@@ -65,7 +65,7 @@
    "previous": "0.3%"
   },
   {
-   "date": "2026-10-03",
+   "date": "2026-10-02",
    "time": "08:30",
    "event": "Nonfarm Payrolls",
    "category": "Jobs",
@@ -73,7 +73,7 @@
    "previous": "162K"
   },
   {
-   "date": "2026-10-03",
+   "date": "2026-10-02",
    "time": "08:30",
    "event": "Unemployment Rate",
    "category": "Jobs",
@@ -81,7 +81,7 @@
    "previous": "4.1%"
   },
   {
-   "date": "2026-10-06",
+   "date": "2026-10-05",
    "time": "10:00",
    "event": "ISM Non-Manufacturing PMI",
    "category": "Growth",
@@ -89,7 +89,7 @@
    "previous": "55.4"
   },
   {
-   "date": "2026-10-10",
+   "date": "2026-10-09",
    "time": "10:00",
    "event": "Michigan Consumer Sentiment",
    "category": "Sentiment",
@@ -549,12 +549,36 @@
  ],
  "earnings": [
   {
+   "date": "2026-09-29",
+   "ticker": "CCL",
+   "name": "Carnival Corporation",
+   "cap": 30474692600.0,
+   "time": "Before open",
+   "eps": "$1.36"
+  },
+  {
    "date": "2026-09-30",
    "ticker": "MU",
    "name": "Micron Technology",
    "cap": 1222319670000.0,
    "time": "After close",
    "eps": "$31.24"
+  },
+  {
+   "date": "2026-09-30",
+   "ticker": "JBL",
+   "name": "Jabil",
+   "cap": 33190262800.0,
+   "time": "Before open",
+   "eps": "$3.86"
+  },
+  {
+   "date": "2026-09-30",
+   "ticker": "FDS",
+   "name": "FactSet",
+   "cap": 9712238600.0,
+   "time": "Before open",
+   "eps": "$4.32"
   },
   {
    "date": "2026-10-01",
@@ -565,12 +589,44 @@
    "eps": "$3.19"
   },
   {
+   "date": "2026-10-01",
+   "ticker": "NKE",
+   "name": "Nike, Inc.",
+   "cap": 53035078000.0,
+   "time": "After close",
+   "eps": "$0.44"
+  },
+  {
+   "date": "2026-10-01",
+   "ticker": "MKC",
+   "name": "McCormick & Company",
+   "cap": 12888742900.0,
+   "time": "Before open",
+   "eps": "$0.75"
+  },
+  {
+   "date": "2026-10-06",
+   "ticker": "STZ",
+   "name": "Constellation Brands",
+   "cap": 19405553700.0,
+   "time": "After close",
+   "eps": "$3.62"
+  },
+  {
    "date": "2026-10-08",
    "ticker": "PEP",
    "name": "PepsiCo",
    "cap": 175565996000.0,
    "time": "Before open",
    "eps": "$2.30"
+  },
+  {
+   "date": "2026-10-09",
+   "ticker": "DAL",
+   "name": "Delta Air Lines",
+   "cap": 55858500000.0,
+   "time": "Before open",
+   "eps": "$2.03"
   },
   {
    "date": "2026-10-13",
@@ -621,6 +677,14 @@
    "eps": "$14.24"
   },
   {
+   "date": "2026-10-13",
+   "ticker": "DPZ",
+   "name": "Domino's",
+   "cap": 9664497700.0,
+   "time": "Before open",
+   "eps": "$4.33"
+  },
+  {
    "date": "2026-10-14",
    "ticker": "BAC",
    "name": "Bank of America",
@@ -645,6 +709,22 @@
    "eps": "$1.84"
   },
   {
+   "date": "2026-10-14",
+   "ticker": "FAST",
+   "name": "Fastenal",
+   "cap": 57868304000.0,
+   "time": "Before open",
+   "eps": "$0.34"
+  },
+  {
+   "date": "2026-10-14",
+   "ticker": "STT",
+   "name": "State Street Corporation",
+   "cap": 49814417000.0,
+   "time": "Before open",
+   "eps": "$3.60"
+  },
+  {
    "date": "2026-10-15",
    "ticker": "SCHW",
    "name": "Charles Schwab Corporation",
@@ -667,6 +747,94 @@
    "cap": 101877400000.0,
    "time": "-",
    "eps": "$2.25"
+  },
+  {
+   "date": "2026-10-15",
+   "ticker": "USB",
+   "name": "U.S. Bancorp",
+   "cap": 92439192000.0,
+   "time": "Before open",
+   "eps": "$1.32"
+  },
+  {
+   "date": "2026-10-15",
+   "ticker": "PNC",
+   "name": "PNC Financial Services",
+   "cap": 90017653000.0,
+   "time": "Before open",
+   "eps": "$4.97"
+  },
+  {
+   "date": "2026-10-15",
+   "ticker": "MRSH",
+   "name": "Marsh McLennan",
+   "cap": 81660396000.0,
+   "time": "Before open",
+   "eps": "$1.96"
+  },
+  {
+   "date": "2026-10-15",
+   "ticker": "IBKR",
+   "name": "Interactive Brokers",
+   "cap": 40432697000.0,
+   "time": "After close",
+   "eps": "$0.67"
+  },
+  {
+   "date": "2026-10-15",
+   "ticker": "SNA",
+   "name": "Snap-on",
+   "cap": 19097653200.0,
+   "time": "-",
+   "eps": "$4.91"
+  },
+  {
+   "date": "2026-10-16",
+   "ticker": "SLB",
+   "name": "Schlumberger",
+   "cap": 76492743000.0,
+   "time": "-",
+   "eps": "$0.62"
+  },
+  {
+   "date": "2026-10-16",
+   "ticker": "TRV",
+   "name": "Travelers Companies (The)",
+   "cap": 75721073000.0,
+   "time": "Before open",
+   "eps": "$6.77"
+  },
+  {
+   "date": "2026-10-16",
+   "ticker": "TFC",
+   "name": "Truist Financial",
+   "cap": 58222703000.0,
+   "time": "Before open",
+   "eps": "$1.12"
+  },
+  {
+   "date": "2026-10-16",
+   "ticker": "MTB",
+   "name": "M&T Bank",
+   "cap": 31943432200.0,
+   "time": "Before open",
+   "eps": "$4.98"
+  },
+  {
+   "date": "2026-10-16",
+   "ticker": "CFG",
+   "name": "Citizens Financial Group",
+   "cap": 27599714300.0,
+   "time": "Before open",
+   "eps": "$1.39"
+  },
+  {
+   "date": "2026-10-16",
+   "ticker": "RF",
+   "name": "Regions Financial Corporation",
+   "cap": 23530293200.0,
+   "time": "Before open",
+   "eps": "$0.66"
   }
  ]
 }

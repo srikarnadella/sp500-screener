@@ -126,8 +126,11 @@ def fetch(today: dt.date, members: dict[str, str], cached: dict) -> dict:
             return cached.get(key, [])
 
     days = lambda n: [today + dt.timedelta(i) for i in range(n)]
-    econ = attempt("econ", lambda: [e for d in days(ECON_DAYS)
-                                    for e in filter_econ(_nasdaq("economicevents", d), d.isoformat())])
+    # Nasdaq's economicevents?date=D returns the events of D-1: asking for a Tuesday returns
+    # Monday's bill auctions, a Saturday returns Friday's payrolls, and the Sep 16 2026 FOMC
+    # decision came back under Sep 17. So query the day after the one we want.
+    econ = attempt("econ", lambda: [e for d in days(ECON_DAYS) for e in filter_econ(
+        _nasdaq("economicevents", d + dt.timedelta(1)), d.isoformat())])
     fomc = attempt("fomc", lambda: parse_fomc(requests.get(FOMC_URL, headers=UA, timeout=20).text))
     earnings = attempt("earnings", lambda: [e for d in days(EARN_DAYS)
                                             for e in filter_earnings(_nasdaq("earnings", d), d.isoformat(), members)])
@@ -139,30 +142,50 @@ def _when(date: str, time: str = "") -> str:
     return f"<b>{d:%a %b} {d.day}</b>" + (f"<small>{S._esc(time)} ET</small>" if time else "")
 
 
-def render(data: dict, today: dt.date) -> str:
+def upcoming(data: dict, today: dt.date, days: int | None = None,
+             also: tuple[str, ...] = ()) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """(releases + next FOMC decisions, earnings) from today on, optionally only the next `days`.
+    Earnings are the $100B+ names plus any ticker in `also` (e.g. your holdings)."""
     t = today.isoformat()
+    end = (today + dt.timedelta(days)).isoformat() if days else "9999"
     fomc = sorted((e for e in data["fomc"] if e["date"] >= t), key=lambda e: e["date"])[:FOMC_AHEAD]
-    econ = pd.DataFrame([e for e in data["econ"] if e["date"] >= t] + fomc,
+    econ = pd.DataFrame([e for e in data["econ"] + fomc if t <= e["date"] < end],
                         columns=["date", "time", "event", "category", "consensus", "previous"])
-    econ = econ.sort_values(["date", "time"], kind="stable")
-    earn = pd.DataFrame([e for e in data["earnings"] if e["date"] >= t and e["cap"] >= MAJOR_CAP],
+    earn = pd.DataFrame([e for e in data["earnings"]
+                         if t <= e["date"] < end and (e["cap"] >= MAJOR_CAP or e["ticker"] in also)],
                         columns=["date", "ticker", "name", "cap", "time", "eps"])
-    earn = earn.sort_values(["date", "cap"], ascending=[True, False], kind="stable")
+    return (econ.sort_values(["date", "time"], kind="stable"),
+            earn.sort_values(["date", "cap"], ascending=[True, False], kind="stable"))
 
-    econ_tbl = S._table(["When", "Event", "Category", "Consensus", "Previous"], S._rows(econ, [
+
+def econ_table(econ: pd.DataFrame, empty: str = "No key releases scheduled.") -> str:
+    if econ.empty:
+        return f'<div class="wrap"><p class="empty">{S._esc(empty)}</p></div>'
+    return S._table(["When", "Event", "Category", "Consensus", "Previous"], S._rows(econ, [
         lambda r: S._td(_when(r["date"], r["time"]), sort=f'{r["date"]} {r["time"]}'),
         lambda r: S._td(S._esc(r["event"]), cls="l"),
         lambda r: S._td(S._esc(r["category"]), cls="l"),
         lambda r: S._td(S._esc(r["consensus"] or "-")),
         lambda r: S._td(S._esc(r["previous"] or "-")),
     ]))
-    earn_tbl = S._table(["When", "Stock", "Timing", "Market cap", "EPS estimate"], S._rows(earn, [
+
+
+def earnings_table(earn: pd.DataFrame, empty: str = "No major earnings scheduled.") -> str:
+    if earn.empty:
+        return f'<div class="wrap"><p class="empty">{S._esc(empty)}</p></div>'
+    return S._table(["When", "Stock", "Timing", "Market cap", "EPS estimate"], S._rows(earn, [
         lambda r: S._td(_when(r["date"]), sort=r["date"]),
         S._stock_cell,
         lambda r: S._td(S._esc(r["time"]), cls="l"),
         lambda r: S._td(f'${r["cap"] / 1e9:,.0f}B', sort=f'{r["cap"]:.0f}'),
         lambda r: S._td(S._esc(r["eps"])),
     ]))
+
+
+def render(data: dict, today: dt.date) -> str:
+    t = today.isoformat()
+    econ, earn = upcoming(data, today)
+    econ_tbl, earn_tbl = econ_table(econ), earnings_table(earn)
 
     body = f"""
 {S._nav("calendar.html")}

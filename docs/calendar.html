@@ -15,7 +15,7 @@ nav.pages a[aria-current]{color:var(--ink);border-color:var(--accent);font-weigh
 h1{font-size:26px;line-height:1.2;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
 h2{font-size:18px;margin:0 0 4px;font-weight:600}
 .sub{color:var(--muted);margin:0 0 24px}
-.demo{background:var(--warn);color:#fff;padding:8px 14px;border-radius:4px;margin-bottom:20px;font-weight:600}
+.demo,.stale{background:var(--warn);color:#fff;padding:8px 14px;border-radius:4px;margin-bottom:20px;font-weight:600}
 .regime{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);
 border-radius:4px;padding:20px 22px;margin-bottom:36px}
 .regime h2{font-size:22px}
@@ -59,17 +59,18 @@ input[type=search]:focus-visible{outline:2px solid var(--accent);outline-offset:
 border-radius:4px;background:var(--panel);color:var(--ink)}
 .filters input[type=number]{width:4em}
 .filters label{display:inline-flex;align-items:center;gap:5px;color:var(--muted);font-size:14px}
+.warn{color:var(--warn);font-weight:600}
 footer{color:var(--muted);font-size:13px;max-width:80ch;border-top:1px solid var(--line);padding-top:16px}
 footer p{margin:0 0 8px}
 </style></head><body><main>
 <nav class="pages" aria-label="Reports"><a href="index.html">S&amp;P 500 screen</a><a href="dip.html">Dip research</a><a href="dashboard.html">Dashboard</a><a href="calendar.html" aria-current="page">Calendar</a></nav>
 <h1>Market calendar</h1>
-<p class="sub">Updated Mon Sep 28, 2026. Times are US Eastern.</p>
+<p class="sub" data-asof="2026-09-28">Updated Mon Sep 28, 2026. Times are US Eastern.</p>
 <section class="block">
   <h2>Economic releases and Fed decisions</h2>
   <p class="desc">Jobs, inflation, growth and sentiment releases for the next 14 days, plus the next
   3 scheduled FOMC rate decisions.</p>
-  <div class="wrap"><table class="sortable"><thead><tr><th class="l"><button type="button">When</button></th><th class=""><button type="button">Event</button></th><th class=""><button type="button">Category</button></th><th class=""><button type="button">Consensus</button></th><th class=""><button type="button">Previous</button></th></tr></thead><tbody><tr><td data-v="2026-09-30 10:00"><b>Wed Sep 30</b><small>10:00 ET</small></td><td class="l">CB Consumer Confidence</td><td class="l">Sentiment</td><td>90.1</td><td>89.4</td></tr><tr><td data-v="2026-09-30 10:00"><b>Wed Sep 30</b><small>10:00 ET</small></td><td class="l">JOLTS Job Openings</td><td class="l">Jobs</td><td>7.230M</td><td>7.271M</td></tr><tr><td data-v="2026-10-01 08:15"><b>Thu Oct 1</b><small>08:15 ET</small></td><td class="l">ADP Nonfarm Employment Change</td><td class="l">Jobs</td><td>70K</td><td>38K</td></tr><tr><td data-v="2026-10-01 08:30"><b>Thu Oct 1</b><small>08:30 ET</small></td><td class="l">Core PCE Price Index</td><td class="l">Inflation</td><td>0.3%</td><td>0.2%</td></tr><tr><td data-v="2026-10-01 08:30"><b>Thu Oct 1</b><small>08:30 ET</small></td><td class="l">GDP</td><td class="l">Growth</td><td>1.5%</td><td>1.5%</td></tr><tr><td data-v="2026-10-02 08:30"><b>Fri Oct 2</b><small>08:30 ET</small></td><td class="l">Initial Jobless Claims</td><td class="l">Jobs</td><td>199K</td><td>197K</td></tr><tr><td data-v="2026-10-02 10:00"><b>Fri Oct 2</b><small>10:00 ET</small></td><td class="l">ISM Manufacturing PMI</td><td class="l">Growth</td><td>55.0</td><td>54.6</td></tr><tr><td data-v="2026-10-03 08:30"><b>Sat Oct 3</b><small>08:30 ET</small></td><td class="l">Average Hourly Earnings</td><td class="l">Jobs</td><td>0.3%</td><td>0.3%</td></tr><tr><td data-v="2026-10-03 08:30"><b>Sat Oct 3</b><small>08:30 ET</small></td><td class="l">Nonfarm Payrolls</td><td class="l">Jobs</td><td>98K</td><td>162K</td></tr><tr><td data-v="2026-10-03 08:30"><b>Sat Oct 3</b><small>08:30 ET</small></td><td class="l">Unemployment Rate</td><td class="l">Jobs</td><td>4.1%</td><td>4.1%</td></tr><tr><td data-v="2026-10-06 10:00"><b>Tue Oct 6</b><small>10:00 ET</small></td><td class="l">ISM Non-Manufacturing PMI</td><td class="l">Growth</td><td>-</td><td>55.4</td></tr><tr><td data-v="2026-10-10 10:00"><b>Sat Oct 10</b><small>10:00 ET</small></td><td class="l">Michigan Consumer Sentiment</td><td class="l">Sentiment</td><td>-</td><td>48.1</td></tr><tr><td data-v="2026-10-28 14:00"><b>Wed Oct 28</b><small>14:00 ET</small></td><td class="l">FOMC rate decision</td><td class="l">Fed</td><td>-</td><td>-</td></tr><tr><td data-v="2026-12-09 14:00"><b>Wed Dec 9</b><small>14:00 ET</small></td><td class="l">FOMC rate decision + projections</td><td class="l">Fed</td><td>-</td><td>-</td></tr><tr><td data-v="2027-01-27 14:00"><b>Wed Jan 27</b><small>14:00 ET</small></td><td class="l">FOMC rate decision</td><td class="l">Fed</td><td>-</td><td>-</td></tr></tbody></table></div>
+  <div class="wrap"><table class="sortable"><thead><tr><th class="l"><button type="button">When</button></th><th class=""><button type="button">Event</button></th><th class=""><button type="button">Category</button></th><th class=""><button type="button">Consensus</button></th><th class=""><button type="button">Previous</button></th></tr></thead><tbody><tr><td data-v="2026-09-29 10:00"><b>Tue Sep 29</b><small>10:00 ET</small></td><td class="l">CB Consumer Confidence</td><td class="l">Sentiment</td><td>90.1</td><td>89.4</td></tr><tr><td data-v="2026-09-29 10:00"><b>Tue Sep 29</b><small>10:00 ET</small></td><td class="l">JOLTS Job Openings</td><td class="l">Jobs</td><td>7.230M</td><td>7.271M</td></tr><tr><td data-v="2026-09-30 08:15"><b>Wed Sep 30</b><small>08:15 ET</small></td><td class="l">ADP Nonfarm Employment Change</td><td class="l">Jobs</td><td>70K</td><td>38K</td></tr><tr><td data-v="2026-09-30 08:30"><b>Wed Sep 30</b><small>08:30 ET</small></td><td class="l">Core PCE Price Index</td><td class="l">Inflation</td><td>0.3%</td><td>0.2%</td></tr><tr><td data-v="2026-09-30 08:30"><b>Wed Sep 30</b><small>08:30 ET</small></td><td class="l">GDP</td><td class="l">Growth</td><td>1.5%</td><td>1.5%</td></tr><tr><td data-v="2026-10-01 08:30"><b>Thu Oct 1</b><small>08:30 ET</small></td><td class="l">Initial Jobless Claims</td><td class="l">Jobs</td><td>199K</td><td>197K</td></tr><tr><td data-v="2026-10-01 10:00"><b>Thu Oct 1</b><small>10:00 ET</small></td><td class="l">ISM Manufacturing PMI</td><td class="l">Growth</td><td>55.0</td><td>54.6</td></tr><tr><td data-v="2026-10-02 08:30"><b>Fri Oct 2</b><small>08:30 ET</small></td><td class="l">Average Hourly Earnings</td><td class="l">Jobs</td><td>0.3%</td><td>0.3%</td></tr><tr><td data-v="2026-10-02 08:30"><b>Fri Oct 2</b><small>08:30 ET</small></td><td class="l">Nonfarm Payrolls</td><td class="l">Jobs</td><td>98K</td><td>162K</td></tr><tr><td data-v="2026-10-02 08:30"><b>Fri Oct 2</b><small>08:30 ET</small></td><td class="l">Unemployment Rate</td><td class="l">Jobs</td><td>4.1%</td><td>4.1%</td></tr><tr><td data-v="2026-10-05 10:00"><b>Mon Oct 5</b><small>10:00 ET</small></td><td class="l">ISM Non-Manufacturing PMI</td><td class="l">Growth</td><td>-</td><td>55.4</td></tr><tr><td data-v="2026-10-09 10:00"><b>Fri Oct 9</b><small>10:00 ET</small></td><td class="l">Michigan Consumer Sentiment</td><td class="l">Sentiment</td><td>-</td><td>48.1</td></tr><tr><td data-v="2026-10-28 14:00"><b>Wed Oct 28</b><small>14:00 ET</small></td><td class="l">FOMC rate decision</td><td class="l">Fed</td><td>-</td><td>-</td></tr><tr><td data-v="2026-12-09 14:00"><b>Wed Dec 9</b><small>14:00 ET</small></td><td class="l">FOMC rate decision + projections</td><td class="l">Fed</td><td>-</td><td>-</td></tr><tr><td data-v="2027-01-27 14:00"><b>Wed Jan 27</b><small>14:00 ET</small></td><td class="l">FOMC rate decision</td><td class="l">Fed</td><td>-</td><td>-</td></tr></tbody></table></div>
 </section>
 <section class="block">
   <h2>Major earnings</h2>
@@ -98,6 +99,22 @@ document.querySelectorAll('table.sortable').forEach(function(t){
     });
   });
 });
+(function(){
+  // Stale-data banner: pages are static, so if the daily job stops, nothing else would say so.
+  // Warn once 2+ weekdays have passed since the data date (1 is normal: the morning run uses
+  // the prior close; 2 leaves room for a market holiday).
+  var el=document.querySelector('[data-asof]');
+  if(!el) return;
+  var d=new Date(el.getAttribute('data-asof')+'T00:00:00'), today=new Date(), n=0;
+  today.setHours(0,0,0,0);
+  for(d.setDate(d.getDate()+1); d<today; d.setDate(d.getDate()+1)){ if(d.getDay()%6) n++; }
+  if(n<2) return;
+  var b=document.createElement('div');
+  b.className='stale'; b.setAttribute('role','status');
+  b.textContent='This data is from '+el.getAttribute('data-asof')+', '+n+' weekdays ago. The daily job may have '
+    +'stopped: check the Actions tab on GitHub.';
+  el.parentNode.insertBefore(b, document.querySelector('h1'));
+})();
 (function(){
   var q=document.getElementById('filter');
   if(!q) return;
