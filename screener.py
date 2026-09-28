@@ -383,6 +383,38 @@ def credit_spread_context(cache: Path) -> dict:
                 note="High-yield vs Treasury spread (FRED BAMLH0A0HYM2). Widening = credit stress.")
 
 
+def pick_scorecard(hist: pd.DataFrame, prices: dict[str, pd.DataFrame], spy: pd.DataFrame | None,
+                   H: int = HORIZON) -> dict:
+    """How the logged daily picks actually did: buy the next session's open, sell the close H
+    sessions later, versus SPY over the same window (same convention as dip_backtest's paper
+    trades). Recomputed from the full log each run, so there's no second file to keep in sync.
+    'beat' is the share that beat SPY for long setups, and the share that LAGGED it for fades,
+    since a fade pick is right when the stock underperforms."""
+    rows = []
+    for r in hist.itertuples():
+        d = prices.get(r.ticker)
+        if d is None or spy is None:
+            continue
+        after = d.index[d.index > pd.Timestamp(r.date)]
+        if len(after) < H:                        # hold hasn't elapsed yet
+            continue
+        e, x = after[0], after[H - 1]
+        if e not in spy.index or x not in spy.index:
+            continue
+        ret = d.at[x, "Close"] / d.at[e, "Open"] - 1
+        rows.append((r.list, ret, ret - (spy.at[x, "Close"] / spy.at[e, "Open"] - 1)))
+    done = pd.DataFrame(rows, columns=["list", "ret", "excess"])
+    out = {}
+    for lst in ("long", "fade"):
+        sub = done[done["list"] == lst]
+        right = sub["excess"] > 0 if lst == "long" else sub["excess"] < 0
+        out[lst] = dict(n=len(sub), pending=int((hist["list"] == lst).sum()) - len(sub),
+                        avg_ret=float(sub["ret"].mean()) if len(sub) else np.nan,
+                        avg_excess=float(sub["excess"].mean()) if len(sub) else np.nan,
+                        beat=float(right.mean()) if len(sub) else np.nan)
+    return out
+
+
 def breadth_series(prices: dict[str, pd.DataFrame]) -> dict:
     """Advance/decline breadth across every downloaded ticker: the McClellan Oscillator
     (EMA19 - EMA39 of net advances) and a Zweig-style breadth thrust (the 10-day EMA of the
@@ -1068,6 +1100,7 @@ def main() -> None:
 
     if args.demo:
         universe, prices, vix, vix3m = demo_data()
+        spy_df = None
         spy = prices[next(iter(prices))]["Close"]  # any series; demo credit/conviction numbers are illustrative
         credit = dict(ok=False, level=np.nan, chg5=np.nan, chg20=np.nan, note="not fetched in --demo mode")
     else:
@@ -1077,7 +1110,8 @@ def main() -> None:
         prices = download_prices(universe["ticker"].tolist(), args.period)
         idx = download_prices(["^VIX", "^VIX3M", "SPY"], "2y")
         vix, vix3m = idx.get("^VIX"), idx.get("^VIX3M")
-        spy = idx["SPY"]["Close"] if "SPY" in idx else None
+        spy_df = idx.get("SPY")
+        spy = spy_df["Close"] if spy_df is not None else None
         if vix is None or len(vix) < 30:
             raise SystemExit("Could not download ^VIX; refusing to publish a report without it.")
         if len(prices) < 0.8 * len(universe):
@@ -1130,17 +1164,7 @@ def main() -> None:
     csv = csv[cols_first + [c for c in csv.columns if c not in cols_first and c != "last_date"]]
     csv.to_csv(out / "data" / "screen_latest.csv", index=False, float_format="%.4f")
 
-    # Snapshot of market-level context, so dashboard.py can build a merged page without
-    # re-downloading anything.
-    (out / "data" / "market_context.json").write_text(json.dumps(dict(
-        asof=str(asof.date()), vix=ctx, breadth=breadth, credit=credit, conviction=conviction,
-        sectors=sector_tbl.to_dict("records"),
-    ), default=float), encoding="utf-8")
-
-    page = render_html(res, ctx, breadth, credit, conviction, sector_tbl, asof, len(res), len(universe),
-                       args.top, args.demo)
-    (out / "index.html").write_text(page, encoding="utf-8")
-
+    scorecard = {}
     if not args.demo:  # keep a log of what we flagged, so the ideas can be forward-tested later
         log = []
         for lst, score_col, lvl_col, gate in [("long", "long_score", "support_level", "support_score"),
@@ -1157,6 +1181,18 @@ def main() -> None:
             old = old[old["date"] != str(asof.date())]
             new = pd.concat([old, new], ignore_index=True)
         new.to_csv(hist_path, index=False)
+        scorecard = pick_scorecard(new, prices, spy_df)
+
+    # Snapshot of market-level context, so dashboard.py can build a merged page without
+    # re-downloading anything.
+    (out / "data" / "market_context.json").write_text(json.dumps(dict(
+        asof=str(asof.date()), vix=ctx, breadth=breadth, credit=credit, conviction=conviction,
+        sectors=sector_tbl.to_dict("records"), scorecard=scorecard,
+    ), default=float), encoding="utf-8")
+
+    page = render_html(res, ctx, breadth, credit, conviction, sector_tbl, asof, len(res), len(universe),
+                       args.top, args.demo)
+    (out / "index.html").write_text(page, encoding="utf-8")
 
     print(f"\nScreened {len(res)} stocks as of {asof.date()}. Report: {out / 'index.html'}")
     show = res[res["support_score"] > 0].sort_values("long_score", ascending=False).head(5)

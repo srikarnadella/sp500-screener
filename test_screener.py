@@ -147,6 +147,20 @@ def test_earnings_notes_flags_only_reports_inside_the_window(tmp_path=None):
     assert list(s.earnings_notes(pd.Series(["JPM"]), cache.with_name("missing.json"), pd.Timestamp("2026-09-30"))) == [""]
 
 
+
+def test_pick_scorecard_next_open_to_close_vs_spy():
+    idx = pd.bdate_range("2026-01-01", periods=15)
+    flat = pd.DataFrame({"Open": 100.0, "Close": 100.0}, index=idx)
+    up = flat.copy(); up.loc[idx[3], "Close"] = 110.0          # +10% by the 3rd session after the signal
+    down = flat.copy(); down.loc[idx[3], "Close"] = 95.0
+    hist = pd.DataFrame({"date": [str(idx[0].date())] * 2 + [str(idx[12].date())],
+                         "list": ["long", "fade", "long"], "ticker": ["UP", "DOWN", "UP"]})
+    sc = s.pick_scorecard(hist, {"UP": up, "DOWN": down}, flat, H=3)
+    assert sc["long"]["n"] == 1 and sc["long"]["pending"] == 1      # the idx[12] pick is still in its hold
+    assert abs(sc["long"]["avg_excess"] - 0.10) < 1e-9 and sc["long"]["beat"] == 1.0
+    assert abs(sc["fade"]["avg_ret"] + 0.05) < 1e-9 and sc["fade"]["beat"] == 1.0   # fade is right when it lags
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

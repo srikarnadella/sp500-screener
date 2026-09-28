@@ -50,7 +50,10 @@ instead, where the ticker list is small enough to afford it.
 
 `dashboard.py` reads the outputs above (and `dip_backtest.py`'s) and writes `docs/dashboard.html`: conviction
 score, breadth, sector relative strength, top long setups, live dip-bouncer signals and portfolio exposure on
-one page, instead of three separate reports. It re-downloads nothing, so run it after the other two:
+one page, instead of three separate reports. It also shows the coming week's key releases and earnings
+(from `econ_calendar.py`) and a track record: how the screen's logged picks did 10 sessions later versus SPY
+(scored by `screener.py` from `signals_history.csv`) next to the dip paper trades. It re-downloads nothing, so run
+it after the others:
 
 ```bash
 python screener.py && python dip_backtest.py && python dashboard.py

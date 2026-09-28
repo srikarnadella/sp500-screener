@@ -105,6 +105,23 @@ def build(out: Path) -> str:
   {C.earnings_table(earn, "No major or held-stock earnings in the next 7 days.")}
 </section>"""
 
+    # Track record: the screen's logged picks (scored by screener.py) and the dip paper trades.
+    sc = ctx.get("scorecard") or {}
+    track = [(f"Screen: {lbl}", s.get("n", 0), s.get("pending", 0), s.get("avg_ret"), s.get("avg_excess"), s.get("beat"))
+             for key, lbl in (("long", "long setups"), ("fade", "fade setups")) if (s := sc.get(key)) is not None]
+    pt_path = out / "data" / "paper_trades.csv"
+    if pt_path.exists():
+        pt = pd.read_csv(pt_path)
+        track.append(("Dip signals (paper trades)", len(pt), None, pt["realized_return"].mean(), None, pt["win"].mean()))
+    num = lambda x: x is not None and np.isfinite(x)
+    track_tbl = '<div class="wrap"><p class="empty">No track record yet: it starts once screener.py has run with scoring enabled.</p></div>' if not track else S._table(["Picks", "Resolved", "Still in hold", "Avg 10-session return", "Avg vs SPY", "Hit rate"], [
+        "<tr>" + S._td(S._esc(name), cls="l") + S._td(str(n), sort=n)
+        + S._td("-" if pending is None else str(pending))
+        + S._td(S._pct(ret, 2, True) if num(ret) else "-", cls=S._cls(ret) if num(ret) else "")
+        + S._td(S._pct(exc, 2, True) if num(exc) else "-", cls=S._cls(exc) if num(exc) else "")
+        + S._td(S._pct(hit, 0) if num(hit) else "-") + "</tr>"
+        for name, n, pending, ret, exc, hit in track])
+
     exposure = D.portfolio_exposure(dip)
     exp_rows = S._rows(exposure, [
         lambda r: S._td(S._esc(r["group"]), cls="l", sort=S._esc(r["group"])),
@@ -137,6 +154,13 @@ breadth/conviction gauge. Full detail in the two linked reports below.</p>
 <section class="block">
   <h2>Portfolio exposure by factor / sector group</h2>
   {exposure_tbl}
+</section>
+<section class="block">
+  <h2>Track record</h2>
+  <p class="desc">How past picks actually did, bought at the next open and sold 10 sessions later. Hit rate: share of
+  long setups that beat SPY, share of fade setups that lagged it, and share of dip trades that made money. This is
+  the live check on the backtests, and it needs months of picks before it means much.</p>
+  {track_tbl}
 </section>
 <footer><p>Screening heuristics, not investment advice. See <a href="index.html">the S&amp;P 500 screen</a> and
 <a href="dip.html">the dip research</a> for methodology and limits.</p></footer>"""
