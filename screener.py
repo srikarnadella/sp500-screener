@@ -709,11 +709,12 @@ def _esc(x) -> str:
     return html.escape(str(x))
 
 
-PAGES = [("index.html", "S&P 500 screen"), ("dip.html", "Dip research"), ("dashboard.html", "Dashboard")]
+PAGES = [("index.html", "S&P 500 screen"), ("dip.html", "Dip research"), ("dashboard.html", "Dashboard"),
+         ("calendar.html", "Calendar")]
 
 
 def _nav(active: str) -> str:
-    """Shared nav bar so the three reports (screener, dip research, dashboard) link to each
+    """Shared nav bar so the reports (screener, dip research, dashboard, calendar) link to each
     other -- otherwise each is only reachable if you already know its exact URL."""
     links = "".join(
         f'<a href="{href}"{" aria-current=\"page\"" if href == active else ""}>{_esc(label)}</a>'

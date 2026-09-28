@@ -56,6 +56,17 @@ one page, instead of three separate reports. It re-downloads nothing, so run it 
 python screener.py && python dip_backtest.py && python dashboard.py
 ```
 
+## Market calendar
+
+`econ_calendar.py` writes `docs/calendar.html`: the next two weeks of key US releases (jobs, CPI/PPI/PCE,
+GDP, retail sales, ISM, sentiment) with consensus and previous values, the next three FOMC rate decisions,
+and earnings dates for S&P 500 companies worth $100B+ over the next three weeks. It uses Nasdaq's public
+calendar API and the Fed's FOMC page (no API keys), and falls back to `docs/data/calendar.json` if a fetch fails.
+
+```bash
+python econ_calendar.py
+```
+
 ## Dip research for your holdings and their sector peers
 
 `dip_backtest.py` answers a different question: which stocks bounce back reliably after a dip, and are any low right now?
@@ -145,6 +156,7 @@ python screener.py                # writes docs/index.html
 python screener.py --demo         # synthetic data, no network, to preview the report
 python test_screener.py           # sanity tests for the screener
 python dashboard.py               # after the two above: writes docs/dashboard.html
+python econ_calendar.py           # writes docs/calendar.html
 ```
 
 Schedule it with cron (Mac/Linux), e.g. weekdays at 4:45pm Eastern:

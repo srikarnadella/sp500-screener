@@ -1,0 +1,672 @@
+{
+ "econ": [
+  {
+   "date": "2026-09-30",
+   "time": "10:00",
+   "event": "CB Consumer Confidence",
+   "category": "Sentiment",
+   "consensus": "90.1",
+   "previous": "89.4"
+  },
+  {
+   "date": "2026-09-30",
+   "time": "10:00",
+   "event": "JOLTS Job Openings",
+   "category": "Jobs",
+   "consensus": "7.230M",
+   "previous": "7.271M"
+  },
+  {
+   "date": "2026-10-01",
+   "time": "08:15",
+   "event": "ADP Nonfarm Employment Change",
+   "category": "Jobs",
+   "consensus": "70K",
+   "previous": "38K"
+  },
+  {
+   "date": "2026-10-01",
+   "time": "08:30",
+   "event": "Core PCE Price Index",
+   "category": "Inflation",
+   "consensus": "0.3%",
+   "previous": "0.2%"
+  },
+  {
+   "date": "2026-10-01",
+   "time": "08:30",
+   "event": "GDP",
+   "category": "Growth",
+   "consensus": "1.5%",
+   "previous": "1.5%"
+  },
+  {
+   "date": "2026-10-02",
+   "time": "08:30",
+   "event": "Initial Jobless Claims",
+   "category": "Jobs",
+   "consensus": "199K",
+   "previous": "197K"
+  },
+  {
+   "date": "2026-10-02",
+   "time": "10:00",
+   "event": "ISM Manufacturing PMI",
+   "category": "Growth",
+   "consensus": "55.0",
+   "previous": "54.6"
+  },
+  {
+   "date": "2026-10-03",
+   "time": "08:30",
+   "event": "Average Hourly Earnings",
+   "category": "Jobs",
+   "consensus": "0.3%",
+   "previous": "0.3%"
+  },
+  {
+   "date": "2026-10-03",
+   "time": "08:30",
+   "event": "Nonfarm Payrolls",
+   "category": "Jobs",
+   "consensus": "98K",
+   "previous": "162K"
+  },
+  {
+   "date": "2026-10-03",
+   "time": "08:30",
+   "event": "Unemployment Rate",
+   "category": "Jobs",
+   "consensus": "4.1%",
+   "previous": "4.1%"
+  },
+  {
+   "date": "2026-10-06",
+   "time": "10:00",
+   "event": "ISM Non-Manufacturing PMI",
+   "category": "Growth",
+   "consensus": "",
+   "previous": "55.4"
+  },
+  {
+   "date": "2026-10-10",
+   "time": "10:00",
+   "event": "Michigan Consumer Sentiment",
+   "category": "Sentiment",
+   "consensus": "",
+   "previous": "48.1"
+  }
+ ],
+ "fomc": [
+  {
+   "date": "2026-01-28",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2026-03-18",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2026-04-29",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2026-06-17",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2026-07-29",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2026-09-16",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2026-10-28",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2026-12-09",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2025-01-29",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2025-03-19",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2025-05-07",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2025-06-18",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2025-07-30",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2025-09-17",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2025-10-29",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2025-12-10",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2024-01-31",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2024-03-20",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2024-05-01",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2024-06-12",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2024-07-31",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2024-09-18",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2024-11-07",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2024-12-18",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2023-02-01",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2023-03-22",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2023-05-03",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2023-06-14",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2023-07-26",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2023-09-20",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2023-11-01",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2023-12-13",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2022-01-26",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2022-03-16",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2022-05-04",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2022-06-15",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2022-07-27",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2022-09-21",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2022-11-02",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2022-12-14",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2021-01-27",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2021-03-17",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2021-04-28",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2021-06-16",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2021-07-28",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2021-09-22",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2021-11-03",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2021-12-15",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2027-01-27",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2027-03-17",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2027-04-28",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2027-06-09",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2027-07-28",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2027-09-15",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2027-10-27",
+   "time": "14:00",
+   "event": "FOMC rate decision",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2027-12-08",
+   "time": "14:00",
+   "event": "FOMC rate decision + projections",
+   "category": "Fed",
+   "consensus": "",
+   "previous": ""
+  }
+ ],
+ "earnings": [
+  {
+   "date": "2026-09-30",
+   "ticker": "MU",
+   "name": "Micron Technology",
+   "cap": 1222319670000.0,
+   "time": "After close",
+   "eps": "$31.24"
+  },
+  {
+   "date": "2026-10-01",
+   "ticker": "ACN",
+   "name": "Accenture",
+   "cap": 117555225000.0,
+   "time": "Before open",
+   "eps": "$3.19"
+  },
+  {
+   "date": "2026-10-08",
+   "ticker": "PEP",
+   "name": "PepsiCo",
+   "cap": 175565996000.0,
+   "time": "Before open",
+   "eps": "$2.30"
+  },
+  {
+   "date": "2026-10-13",
+   "ticker": "JPM",
+   "name": "JPMorgan Chase",
+   "cap": 911917380000.0,
+   "time": "Before open",
+   "eps": "$5.84"
+  },
+  {
+   "date": "2026-10-13",
+   "ticker": "JNJ",
+   "name": "Johnson & Johnson",
+   "cap": 653612680000.0,
+   "time": "Before open",
+   "eps": "$2.96"
+  },
+  {
+   "date": "2026-10-13",
+   "ticker": "UNH",
+   "name": "UnitedHealth Group",
+   "cap": 338025251000.0,
+   "time": "Before open",
+   "eps": "$4.12"
+  },
+  {
+   "date": "2026-10-13",
+   "ticker": "GS",
+   "name": "Goldman Sachs",
+   "cap": 272376300000.0,
+   "time": "Before open",
+   "eps": "$15.18"
+  },
+  {
+   "date": "2026-10-13",
+   "ticker": "C",
+   "name": "Citigroup",
+   "cap": 225246216000.0,
+   "time": "Before open",
+   "eps": "$2.67"
+  },
+  {
+   "date": "2026-10-13",
+   "ticker": "BLK",
+   "name": "BlackRock",
+   "cap": 168236024000.0,
+   "time": "-",
+   "eps": "$14.24"
+  },
+  {
+   "date": "2026-10-14",
+   "ticker": "BAC",
+   "name": "Bank of America",
+   "cap": 396488835000.0,
+   "time": "Before open",
+   "eps": "$1.16"
+  },
+  {
+   "date": "2026-10-14",
+   "ticker": "MS",
+   "name": "Morgan Stanley",
+   "cap": 308317880000.0,
+   "time": "Before open",
+   "eps": "$3.06"
+  },
+  {
+   "date": "2026-10-14",
+   "ticker": "WFC",
+   "name": "Wells Fargo",
+   "cap": 250901217000.0,
+   "time": "Before open",
+   "eps": "$1.84"
+  },
+  {
+   "date": "2026-10-15",
+   "ticker": "SCHW",
+   "name": "Charles Schwab Corporation",
+   "cap": 171256119000.0,
+   "time": "Before open",
+   "eps": "$1.67"
+  },
+  {
+   "date": "2026-10-15",
+   "ticker": "PLD",
+   "name": "Prologis",
+   "cap": 126141514000.0,
+   "time": "Before open",
+   "eps": "$1.58"
+  },
+  {
+   "date": "2026-10-15",
+   "ticker": "BNY",
+   "name": "BNY Mellon",
+   "cap": 101877400000.0,
+   "time": "-",
+   "eps": "$2.25"
+  }
+ ]
+}

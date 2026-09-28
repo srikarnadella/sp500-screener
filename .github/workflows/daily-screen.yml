@@ -35,6 +35,10 @@ jobs:
           python test_screener.py
           python test_dip.py
           python test_ml_respect.py
+          python test_econ_calendar.py
+
+      - name: Build market calendar (econ releases, FOMC, earnings)
+        run: python econ_calendar.py
 
       - name: Run S&P 500 screener
         run: python screener.py
