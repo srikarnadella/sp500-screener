@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write      # lets the job commit the refreshed report
+  issues: write        # lets the job open an alert issue (GitHub emails you about it)
 
 concurrency:
   group: daily-screen
@@ -36,6 +37,7 @@ jobs:
           python test_dip.py
           python test_ml_respect.py
           python test_econ_calendar.py
+          python test_dashboard.py
 
       - name: Build market calendar (econ releases, FOMC, earnings)
         run: python econ_calendar.py
@@ -47,7 +49,7 @@ jobs:
         run: python dip_backtest.py
 
       - name: Build merged dashboard
-        run: python dashboard.py
+        run: python dashboard.py --alert alert.md
 
       # No `if: always()`: when any step fails, publish nothing rather than a mix of fresh and
       # stale pages. The stale-data banner on each page makes a missed day visible.
@@ -62,4 +64,19 @@ jobs:
             git commit -m "Daily screen $(TZ=America/New_York date +%F)"
             git pull --rebase
             git push
+          fi
+
+      # One issue per data date: the evening run and next morning's run see the same close,
+      # so the second one finds the existing issue and skips.
+      - name: Open an issue for alerts
+        if: hashFiles('alert.md') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="$(head -n 1 alert.md)"
+          if gh issue list --state all --search "\"$title\" in:title" --json title -q '.[].title' | grep -qxF "$title"; then
+            echo "Already opened: $title"
+          else
+            tail -n +3 alert.md > body.md
+            gh issue create --title "$title" --body-file body.md
           fi

@@ -9,6 +9,9 @@ screener.py and dip_backtest.py already write, so run those first:
   python screener.py
   python dip_backtest.py
   python dashboard.py         writes docs/dashboard.html
+  python dashboard.py --alert alert.md
+                              also writes alert.md when something needs attention next session
+                              (the daily workflow turns it into a GitHub issue, which emails you)
 """
 from __future__ import annotations
 
@@ -29,6 +32,33 @@ import screener as S
 def _need(path: Path, script: str) -> None:
     if not path.exists():
         raise SystemExit(f"{path} not found -- run `python {script}` first.")
+
+
+ALERT_EVENTS = ("CPI", "Core CPI", "Nonfarm Payrolls", "Core PCE Price Index")   # plus every FOMC decision
+
+
+def next_session(d: dt.date) -> dt.date:
+    d += dt.timedelta(1)
+    while d.weekday() >= 5:
+        d += dt.timedelta(1)
+    return d   # ponytail: ignores market holidays; an alert a day early is harmless
+
+
+def alerts(dip: pd.DataFrame, cal: dict | None, asof: dt.date) -> list[str]:
+    """Markdown bullets for what needs attention by the next session: a consistent dip-bouncer
+    firing today, a holding reporting earnings, or a top-tier release/FOMC decision. Keyed to the
+    data date, so the evening run and the next morning's run (same close) raise the same alert."""
+    items = [f"- **{r.ticker}** dip signal today: {r.grade}, {r.best_rule}, {r.win:.0%} historical win rate"
+             for r in dip[dip["grade"].isin(["Consistent", "Mostly"]) & (dip["status"] == "Signal today")].itertuples()]
+    if cal:
+        nxt = next_session(asof)
+        econ, earn = C.upcoming(cal, nxt, days=1, also=tuple(D.POSITIONS))
+        day = f"{nxt:%a %b} {nxt.day}"
+        items += [f"- **{r.ticker}** (you hold it) reports earnings {day}" + (f", {r.time.lower()}" if r.time != "-" else "")
+                  for r in earn[earn["ticker"].isin(D.POSITIONS)].itertuples()]
+        items += [f"- **{r.event}** {day} at {r.time} ET" for r in econ.itertuples()
+                  if r.event in ALERT_EVENTS or r.event.startswith("FOMC rate decision")]
+    return items
 
 
 def build(out: Path) -> str:
@@ -174,11 +204,21 @@ breadth/conviction gauge. Full detail in the two linked reports below.</p>
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default="docs")
+    ap.add_argument("--alert", help="write an alert file here when something needs attention")
     args = ap.parse_args()
     out = Path(args.out)
     page = build(out)
     (out / "dashboard.html").write_text(page, encoding="utf-8")
     print(f"Wrote {out / 'dashboard.html'}")
+    if args.alert:
+        asof = dt.date.fromisoformat(json.loads((out / "data" / "market_context.json").read_text())["asof"])
+        cal_path = out / "data" / "calendar.json"
+        items = alerts(pd.read_csv(out / "data" / "dip_results.csv"),
+                       json.loads(cal_path.read_text()) if cal_path.exists() else None, asof)
+        if items:   # first line is the issue title, the rest its body
+            Path(args.alert).write_text(f"Screener alerts for {asof}\n\n" + "\n".join(items)
+                                        + "\n\nDashboard: https://srikarnadella.github.io/sp500-screener/dashboard.html\n")
+            print(f"Wrote {args.alert}: {len(items)} alert(s)")
 
 
 if __name__ == "__main__":

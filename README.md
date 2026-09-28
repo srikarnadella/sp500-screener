@@ -72,6 +72,13 @@ calendar API and the Fed's FOMC page (no API keys), and falls back to `docs/data
 python econ_calendar.py
 ```
 
+## Alerts
+
+`python dashboard.py --alert alert.md` also writes `alert.md` when something needs attention by the next
+session: a Consistent/Mostly dip-bouncer firing today, one of your holdings (`POSITIONS` in `dip_backtest.py`)
+reporting earnings, or CPI, payrolls, core PCE or an FOMC decision. The daily workflow turns that into a GitHub
+issue, once per data date, and GitHub emails you about new issues on your repo. Close them as you read them.
+
 ## Dip research for your holdings and their sector peers
 
 `dip_backtest.py` answers a different question: which stocks bounce back reliably after a dip, and are any low right now?
