@@ -50,6 +50,9 @@ EXCESS_FULL = 0.20     # ...and beating it by 20 pts earns full credit
 PLACEBO_ATR = (-6, -4, 4, 6)          # moving-average placebos: level shifted by this many ATRs
 PLACEBO_SIGMA = (1.0, 1.5, 2.5, 3.0)  # Bollinger placebos: same band at other std-dev multiples
 IN_PLAY_ATR = 1.5      # how close (in ATRs) price must be for a level to count
+CLAIM_RW_RESPECT_MAX = 0.13   # footer claim, checked by validate.py: on random walks, at most this
+                              # share of well-tested levels clears the "respected" bar by chance
+                              # (measured 8.7-11.4% across seed sets, Sep 2026)
 
 # level name -> (column, family, roles it can play).  Each family gets its own placebo baseline.
 LEVELS = {
@@ -432,6 +435,18 @@ def breadth_series(prices: dict[str, pd.DataFrame]) -> dict:
     return dict(mcclellan=float(mcclellan.iloc[-1]) if len(mcclellan) else np.nan,
                 zweig_thrust=thrust, adv=int(adv.iloc[-1]) if len(adv) else 0,
                 decl=int(decl.iloc[-1]) if len(decl) else 0)
+
+
+def market_breadth(res: pd.DataFrame, prices: dict[str, pd.DataFrame]) -> dict:
+    return dict(
+        above50=100 * (res["vs_sma50"] > 0).mean(),
+        above200=100 * (res["vs_sma200"] > 0).mean(),
+        oversold=int((res["rsi"] < 30).sum()),
+        overbought=int((res["rsi"] > 70).sum()),
+        new_highs=int((res["pos52"] >= 0.99).sum()),
+        new_lows=int((res["pos52"] <= 0.01).sum()),
+        **breadth_series(prices),
+    )
 
 
 def sector_strength(res: pd.DataFrame) -> pd.DataFrame:
@@ -1036,7 +1051,8 @@ def render_html(res: pd.DataFrame, ctx: dict, breadth: dict, credit: dict, convi
   counts as respected only if it beats that baseline by {EXCESS_MIN * 100:.0f} points over at least {MIN_EVENTS}
   resolved tests. Small samples are shrunk toward the baseline.</p>
   <p><b>Limits.</b> Scores are heuristics built for screening, not a validated trading edge. With six levels across
-  500 stocks, some will look respected by chance. Levels tested only a handful of times are noisy, even after shrinkage. This is not
+  500 stocks, some will look respected by chance: on simulated random walks, up to {CLAIM_RW_RESPECT_MAX:.0%} of
+  well-tested levels do (re-checked on every code change). Levels tested only a handful of times are noisy, even after shrinkage. This is not
   investment advice.</p>
 </footer>"""
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8">'
@@ -1146,15 +1162,7 @@ def main() -> None:
     res["long_score"] = (res["long_raw"] * ctx["long"]).clip(upper=100)
     res["fade_score"] = (res["fade_raw"] * ctx["fade"]).clip(upper=100)
 
-    breadth = dict(
-        above50=100 * (res["vs_sma50"] > 0).mean(),
-        above200=100 * (res["vs_sma200"] > 0).mean(),
-        oversold=int((res["rsi"] < 30).sum()),
-        overbought=int((res["rsi"] > 70).sum()),
-        new_highs=int((res["pos52"] >= 0.99).sum()),
-        new_lows=int((res["pos52"] <= 0.01).sum()),
-        **breadth_series(prices),
-    )
+    breadth = market_breadth(res, prices)
     sector_tbl = sector_strength(res)
     conviction = conviction_score(breadth, ctx, res)
 

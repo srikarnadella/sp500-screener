@@ -1,8 +1,9 @@
 name: CI
 
-# Every push and PR: run the tests, then build every page from synthetic --demo data (no network),
-# so a broken change fails here instead of in the next scheduled daily run. Deploys stay in
-# daily-screen.yml; GitHub Pages publishes whatever that job commits.
+# Every push and PR: unit tests, backtest validation on a frozen price snapshot (calculations,
+# the pages' claims, and findings vs the approved baseline -- see validate.py), then build every
+# page from synthetic --demo data (no network). A broken change fails here, not in the daily run.
+# Deploys stay in daily-screen.yml; GitHub Pages publishes whatever that job commits.
 on:
   push:
     branches: [main]
@@ -37,6 +38,10 @@ jobs:
           python test_ml_respect.py
           python test_econ_calendar.py
           python test_dashboard.py
+          python test_validate.py
+
+      - name: Backtest validation (calculations, guidance claims, findings vs baseline)
+        run: python validate.py
 
       - name: Smoke test (build all pages offline)
         run: |

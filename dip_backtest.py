@@ -86,6 +86,14 @@ STRATEGIES = ["BB dip", "50-day pullback", "10% drawdown"]
 ACCOUNT_SIZE = 100_000     # edit to your actual account size; only used for the Kelly sizing suggestion
 KELLY_CAP = 0.25           # hard cap on suggested position size, regardless of what Kelly says
 
+# Claims the report makes about its own gate. The footer text is built from these, and
+# validate.py re-runs the simulations on every push and fails if any stops being true.
+# Measured on 3 x 200 series (Sep 2026): 99% / 85% / 60% detected at 3 / 4 / 5-day half-lives,
+# 11% at 10 days, 5% at 15, and 2-4.5% of pure random walks pass. Claims sit a margin inside that.
+CLAIM_DETECT_MIN = {3: 0.90, 4: 0.75, 5: 0.50}   # half-life (sessions) -> detected in at least this share
+CLAIM_DETECT_MAX = {10: 0.18, 15: 0.10}          # slow reversion -> detected in at most this share
+CLAIM_NULL_MAX = 0.07                            # pure random walks pass in at most this share
+
 
 # --------------------------------------------------------------------------- #
 # Signals and trades
@@ -275,16 +283,18 @@ def evaluate(df: pd.DataFrame, horizons=HORIZONS):
 # Synthetic series (demo mode, tests, and the false-positive calibration)
 # --------------------------------------------------------------------------- #
 def synth_series(kind: str, seed: int, n: int = 2520, vol: float | None = None,
-                 end: pd.Timestamp | None = None) -> pd.DataFrame:
+                 end: pd.Timestamp | None = None, half_life: float | None = None) -> pd.DataFrame:
     """kind='rw': random walk with drift.
-    kind='ou': price snapping back toward a rising trend (4-day half-life), a planted 'dip-bouncer'."""
+    kind='ou': price snapping back toward a rising trend (default 4.3-day half-life), a planted
+    'dip-bouncer'; `half_life` (sessions) sets how fast it snaps back."""
     rng = np.random.default_rng(seed)
     vol = vol or rng.uniform(0.012, 0.028)
     drift = 0.0004
     if kind == "ou":
+        phi = 0.5 ** (1 / half_life) if half_life else 0.85
         x = np.zeros(n)
         for j in range(1, n):
-            x[j] = 0.85 * x[j - 1] + vol * rng.standard_normal()
+            x[j] = phi * x[j - 1] + vol * rng.standard_normal()
         logp = np.arange(n) * drift + x
     else:
         logp = np.cumsum(drift + vol * rng.standard_normal(n))
@@ -667,9 +677,11 @@ the position typically trades before it recovers.</p>
 <p><b>False-positive check.</b> The same gate was run on 150 pure random-walk series. {null['any']:.0%} of them
 earned Consistent or Mostly on at least one rule. Here {n_ok} of {len(res)} tickers earned it, so roughly
 {exp_fp:.0f} of those would be expected by luck alone. Treat the grade as a filter to focus attention, not proof.</p>
-<p><b>What this can and cannot detect.</b> In simulations, the gate found a planted bounce pattern with a 3 to 5 day
-half-life in roughly 60% to 98% of series, but found almost none when reversion took 10 days or longer. So "no consistent
-dip-bouncers" means no fast, reliable bounce pattern, not that no pattern exists.</p>
+<p><b>What this can and cannot detect.</b> In simulations, the gate found a planted bounce pattern in at least
+{", ".join(f"{m:.0%} of series at a {hl}-day half-life" for hl, m in CLAIM_DETECT_MIN.items())}, but in no more than
+{CLAIM_DETECT_MAX[10]:.0%} when reversion took 10 days or longer, and in no more than {CLAIM_NULL_MAX:.0%} of pure
+random walks. So "no consistent dip-bouncers" means no fast,
+reliable bounce pattern, not that no pattern exists. These figures are re-checked on every code change.</p>
 <p><b>Extra rigor.</b> "Edge, 90% CI" bootstrap-resamples the trades themselves ({MC_DRAWS} draws) to show a range on
 the edge, not just the point estimate -- a wide range crossing zero means the win rate is noisier than it looks.
 "Walk-forward folds+" splits history into {WF_FOLDS} sequential chunks and counts how many had a positive edge (out

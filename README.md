@@ -160,9 +160,31 @@ history, not synthetic data -- run it live and read the verdict before deciding.
 3. **Actions tab > Daily S&P 500 screen > Run workflow** to run it once by hand and confirm it works.
 4. From then on it runs Mon-Fri at 9:07am and 5:07pm Eastern (cron is UTC, so edit it at each DST switch; see the workflow comment) and commits the refreshed report. GitHub can start scheduled runs late.
 
-**CI** (`.github/workflows/ci.yml`) runs the tests and builds every page from `--demo` data on each push and
-pull request, so a broken change fails in minutes instead of in the next daily run. The daily job reruns the
-tests before publishing. The bot's own commits don't trigger CI.
+**CI** (`.github/workflows/ci.yml`) runs on each push and pull request: the unit tests, the backtest validation
+below, and a build of every page from `--demo` data. A broken change fails in minutes instead of in the next daily
+run. The daily job reruns the tests before publishing. The bot's own commits don't trigger CI.
+
+### Backtest validation (`validate.py`)
+
+Runs the real screener and dip-research code on a frozen 10-year snapshot of 28 tickers
+(`validation/prices.csv.gz`), so results change only when the code does. It fails CI if:
+
+1. **a calculation is broken**: a probability outside [0, 1], a score outside [0, 100], an inf, a grade that
+   doesn't match its criteria, an estimate outside its own confidence interval, a level shown as respected
+   that doesn't beat its baseline;
+2. **a claim on the pages stops being true**: the dip gate's detection rates for planted bounce patterns and
+   random walks, the screener's false-respect rate on random walks, and each VIX regime note matching the
+   multiplier it applies (these numbers are constants the page text is built from);
+3. **a finding moved** versus `validation/baseline.json`: grades, best rules, win rates, edges, levels, scores.
+   The job summary lists every change, headline flips first.
+
+When a change is meant to move the findings, review the diff, then approve it:
+
+```bash
+python validate.py            # see what moved
+python validate.py --update   # approve; commit validation/baseline.json with the change
+python validate.py --fetch    # occasionally: refresh the price snapshot (then --update)
+```
 
 ### Or run it on your own machine
 
