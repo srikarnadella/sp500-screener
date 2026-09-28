@@ -390,13 +390,14 @@ def pick_scorecard(hist: pd.DataFrame, prices: dict[str, pd.DataFrame], spy: pd.
     trades). Recomputed from the full log each run, so there's no second file to keep in sync.
     'beat' is the share that beat SPY for long setups, and the share that LAGGED it for fades,
     since a fade pick is right when the stock underperforms."""
-    rows = []
+    rows, pending = [], {"long": 0, "fade": 0}
     for r in hist.itertuples():
         d = prices.get(r.ticker)
-        if d is None or spy is None:
+        if d is None or spy is None:              # dropped from the index / failed download: unscorable
             continue
         after = d.index[d.index > pd.Timestamp(r.date)]
         if len(after) < H:                        # hold hasn't elapsed yet
+            pending[r.list] = pending.get(r.list, 0) + 1
             continue
         e, x = after[0], after[H - 1]
         if e not in spy.index or x not in spy.index:
@@ -408,7 +409,7 @@ def pick_scorecard(hist: pd.DataFrame, prices: dict[str, pd.DataFrame], spy: pd.
     for lst in ("long", "fade"):
         sub = done[done["list"] == lst]
         right = sub["excess"] > 0 if lst == "long" else sub["excess"] < 0
-        out[lst] = dict(n=len(sub), pending=int((hist["list"] == lst).sum()) - len(sub),
+        out[lst] = dict(n=len(sub), pending=pending[lst],
                         avg_ret=float(sub["ret"].mean()) if len(sub) else np.nan,
                         avg_excess=float(sub["excess"].mean()) if len(sub) else np.nan,
                         beat=float(right.mean()) if len(sub) else np.nan)

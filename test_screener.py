@@ -155,6 +155,7 @@ def test_pick_scorecard_next_open_to_close_vs_spy():
     down = flat.copy(); down.loc[idx[3], "Close"] = 95.0
     hist = pd.DataFrame({"date": [str(idx[0].date())] * 2 + [str(idx[12].date())],
                          "list": ["long", "fade", "long"], "ticker": ["UP", "DOWN", "UP"]})
+    hist.loc[len(hist)] = [str(idx[0].date()), "long", "DELISTED"]   # no prices: neither scored nor pending
     sc = s.pick_scorecard(hist, {"UP": up, "DOWN": down}, flat, H=3)
     assert sc["long"]["n"] == 1 and sc["long"]["pending"] == 1      # the idx[12] pick is still in its hold
     assert abs(sc["long"]["avg_excess"] - 0.10) < 1e-9 and sc["long"]["beat"] == 1.0

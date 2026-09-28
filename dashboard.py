@@ -23,6 +23,10 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
+from pandas.tseries.holiday import (AbstractHolidayCalendar, GoodFriday, Holiday, USLaborDay,
+                                    USMartinLutherKingJr, USMemorialDay, USPresidentsDay,
+                                    USThanksgivingDay, nearest_workday)
+from pandas.tseries.offsets import CustomBusinessDay
 
 import dip_backtest as D
 import econ_calendar as C
@@ -37,11 +41,22 @@ def _need(path: Path, script: str) -> None:
 ALERT_EVENTS = ("CPI", "Core CPI", "Nonfarm Payrolls", "Core PCE Price Index")   # plus every FOMC decision
 
 
+class NYSEHolidays(AbstractHolidayCalendar):
+    """NYSE full-day closures. Skipping them matters: the alert for a data date covers the NEXT
+    session, and runs on a holiday see the same data date, so treating a holiday as a session
+    would silently skip the day after it (e.g. a Tuesday CPI after Labor Day)."""
+    rules = [Holiday("New Year's Day", month=1, day=1, observance=nearest_workday), USMartinLutherKingJr,
+             USPresidentsDay, GoodFriday, USMemorialDay,
+             Holiday("Juneteenth", month=6, day=19, start_date="2022-01-01", observance=nearest_workday),
+             Holiday("Independence Day", month=7, day=4, observance=nearest_workday), USLaborDay,
+             USThanksgivingDay, Holiday("Christmas", month=12, day=25, observance=nearest_workday)]
+
+
+SESSION = CustomBusinessDay(calendar=NYSEHolidays())
+
+
 def next_session(d: dt.date) -> dt.date:
-    d += dt.timedelta(1)
-    while d.weekday() >= 5:
-        d += dt.timedelta(1)
-    return d   # ponytail: ignores market holidays; an alert a day early is harmless
+    return (pd.Timestamp(d) + SESSION).date()
 
 
 def alerts(dip: pd.DataFrame, cal: dict | None, asof: dt.date) -> list[str]:

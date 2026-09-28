@@ -9,6 +9,9 @@ import dashboard as B
 def test_next_session_skips_weekend():
     assert B.next_session(dt.date(2026, 10, 2)) == dt.date(2026, 10, 5)   # Fri -> Mon
     assert B.next_session(dt.date(2026, 9, 29)) == dt.date(2026, 9, 30)
+    assert B.next_session(dt.date(2026, 9, 4)) == dt.date(2026, 9, 8)     # Fri -> Tue over Labor Day
+    assert B.next_session(dt.date(2026, 11, 25)) == dt.date(2026, 11, 27)  # skips Thanksgiving
+    assert B.next_session(dt.date(2027, 3, 25)) == dt.date(2027, 3, 29)   # skips Good Friday
 
 
 def test_alerts_only_for_what_needs_attention_next_session():

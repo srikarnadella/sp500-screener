@@ -95,7 +95,7 @@ def filter_earnings(rows: list[dict], date: str, members: dict[str, str]) -> lis
         try:
             cap = float(re.sub(r"[$,]", "", r.get("marketCap") or ""))
         except ValueError:
-            continue
+            cap = 0.0   # keep the member (screener.py still flags it), just never "major"
         if sym:
             out.append(dict(date=date, ticker=sym, name=members[sym], cap=cap,
                             time={"time-pre-market": "Before open", "time-after-hours": "After close"}

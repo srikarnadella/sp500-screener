@@ -44,7 +44,8 @@ def test_filter_earnings_sp500_only():
             dict(symbol="BRK/B", marketCap="$1,000,000,000,000", time="time-not-supplied", epsForecast="")]
     got = c.filter_earnings(rows, "2026-10-13", {"JPM": "JPMorgan Chase", "MKC": "McCormick", "GS": "Goldman",
                                                  "BRK-B": "Berkshire Hathaway"})
-    assert [(e["ticker"], e["time"]) for e in got] == [("JPM", "Before open"), ("MKC", "Before open"), ("BRK-B", "-")]
+    assert [(e["ticker"], e["time"]) for e in got] == [("JPM", "Before open"), ("MKC", "Before open"),
+                                                       ("GS", "After close"), ("BRK-B", "-")]
 
 
 def test_render_drops_past_events():
