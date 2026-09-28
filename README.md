@@ -160,6 +160,10 @@ history, not synthetic data -- run it live and read the verdict before deciding.
 3. **Actions tab > Daily S&P 500 screen > Run workflow** to run it once by hand and confirm it works.
 4. From then on it runs Mon-Fri at 9:07am and 5:07pm Eastern (cron is UTC, so edit it at each DST switch; see the workflow comment) and commits the refreshed report. GitHub can start scheduled runs late.
 
+**CI** (`.github/workflows/ci.yml`) runs the tests and builds every page from `--demo` data on each push and
+pull request, so a broken change fails in minutes instead of in the next daily run. The daily job reruns the
+tests before publishing. The bot's own commits don't trigger CI.
+
 ### Or run it on your own machine
 
 ```bash
