@@ -6,7 +6,7 @@
    "event": "CB Consumer Confidence",
    "category": "Sentiment",
    "consensus": "89.2",
-   "previous": "89.4"
+   "previous": "88.6"
   },
   {
    "date": "2026-09-29",
@@ -14,7 +14,7 @@
    "event": "JOLTS Job Openings",
    "category": "Jobs",
    "consensus": "7.230M",
-   "previous": "7.271M"
+   "previous": "7.335M"
   },
   {
    "date": "2026-09-30",
@@ -560,7 +560,7 @@
    "date": "2026-09-29",
    "ticker": "CCL",
    "name": "Carnival Corporation",
-   "cap": 30474692600.0,
+   "cap": 30324031500.0,
    "time": "Before open",
    "eps": "$1.36"
   },
