@@ -1,14 +1,6 @@
 {
  "econ": [
   {
-   "date": "2026-10-05",
-   "time": "10:00",
-   "event": "ISM Non-Manufacturing PMI",
-   "category": "Growth",
-   "consensus": "55.1",
-   "previous": "55.4"
-  },
-  {
    "date": "2026-10-08",
    "time": "08:30",
    "event": "Initial Jobless Claims",
@@ -59,6 +51,14 @@
   {
    "date": "2026-10-15",
    "time": "08:30",
+   "event": "Initial Jobless Claims",
+   "category": "Jobs",
+   "consensus": "",
+   "previous": ""
+  },
+  {
+   "date": "2026-10-15",
+   "time": "08:30",
    "event": "PPI",
    "category": "Inflation",
    "consensus": "",
@@ -70,7 +70,7 @@
    "event": "Retail Sales",
    "category": "Growth",
    "consensus": "",
-   "previous": "1.2%"
+   "previous": "6.01%"
   }
  ],
  "fomc": [
@@ -528,7 +528,7 @@
    "date": "2026-10-06",
    "ticker": "STZ",
    "name": "Constellation Brands",
-   "cap": 19275761700.0,
+   "cap": 19350904800.0,
    "time": "After close",
    "eps": "$3.62"
   },
@@ -536,7 +536,7 @@
    "date": "2026-10-08",
    "ticker": "PEP",
    "name": "PepsiCo",
-   "cap": 171826201000.0,
+   "cap": 171498619000.0,
    "time": "Before open",
    "eps": "$2.29"
   },
@@ -544,7 +544,7 @@
    "date": "2026-10-09",
    "ticker": "DAL",
    "name": "Delta Air Lines",
-   "cap": 55299523000.0,
+   "cap": 54635319000.0,
    "time": "Before open",
    "eps": "$1.96"
   },
@@ -554,13 +554,13 @@
    "name": "JPMorgan Chase",
    "cap": 883527910000.0,
    "time": "Before open",
-   "eps": "$5.88"
+   "eps": "$5.94"
   },
   {
    "date": "2026-10-13",
    "ticker": "JNJ",
    "name": "Johnson & Johnson",
-   "cap": 617006370000.0,
+   "cap": 609535660000.0,
    "time": "Before open",
    "eps": "$2.90"
   },
@@ -568,7 +568,7 @@
    "date": "2026-10-13",
    "ticker": "UNH",
    "name": "UnitedHealth Group",
-   "cap": 333815513000.0,
+   "cap": 339811467000.0,
    "time": "Before open",
    "eps": "$4.12"
   },
@@ -576,15 +576,23 @@
    "date": "2026-10-13",
    "ticker": "GS",
    "name": "Goldman Sachs",
-   "cap": 262799671000.0,
+   "cap": 260150002000.0,
    "time": "Before open",
-   "eps": "$14.05"
+   "eps": "$13.89"
+  },
+  {
+   "date": "2026-10-13",
+   "ticker": "WFC",
+   "name": "Wells Fargo",
+   "cap": 246274507000.0,
+   "time": "Before open",
+   "eps": "$1.85"
   },
   {
    "date": "2026-10-13",
    "ticker": "C",
    "name": "Citigroup",
-   "cap": 215550624000.0,
+   "cap": 215634493000.0,
    "time": "Before open",
    "eps": "$2.66"
   },
@@ -592,47 +600,39 @@
    "date": "2026-10-13",
    "ticker": "DPZ",
    "name": "Domino's",
-   "cap": 9845620700.0,
+   "cap": 9834207200.0,
    "time": "Before open",
-   "eps": "$4.34"
+   "eps": "$4.33"
   },
   {
    "date": "2026-10-14",
    "ticker": "BAC",
    "name": "Bank of America",
-   "cap": 375860232000.0,
+   "cap": 377608405000.0,
    "time": "Before open",
-   "eps": "$1.13"
+   "eps": "$1.12"
   },
   {
    "date": "2026-10-14",
    "ticker": "MS",
    "name": "Morgan Stanley",
-   "cap": 298894459000.0,
+   "cap": 298706010000.0,
    "time": "Before open",
-   "eps": "$2.97"
-  },
-  {
-   "date": "2026-10-14",
-   "ticker": "WFC",
-   "name": "Wells Fargo",
-   "cap": 243280740000.0,
-   "time": "Before open",
-   "eps": "$1.85"
+   "eps": "$2.88"
   },
   {
    "date": "2026-10-14",
    "ticker": "BLK",
    "name": "BlackRock",
-   "cap": 164104110000.0,
+   "cap": 165160321000.0,
    "time": "Before open",
-   "eps": "$14.19"
+   "eps": "$14.04"
   },
   {
    "date": "2026-10-14",
    "ticker": "FAST",
    "name": "Fastenal",
-   "cap": 58235503000.0,
+   "cap": 58166653000.0,
    "time": "Before open",
    "eps": "$0.34"
   },
@@ -640,23 +640,23 @@
    "date": "2026-10-14",
    "ticker": "STT",
    "name": "State Street Corporation",
-   "cap": 48336523000.0,
+   "cap": 48449151000.0,
    "time": "Before open",
-   "eps": "$3.62"
+   "eps": "$3.63"
   },
   {
    "date": "2026-10-15",
    "ticker": "SCHW",
    "name": "Charles Schwab Corporation",
-   "cap": 167226769000.0,
+   "cap": 169405727000.0,
    "time": "Before open",
-   "eps": "$1.67"
+   "eps": "$1.66"
   },
   {
    "date": "2026-10-15",
    "ticker": "PLD",
    "name": "Prologis",
-   "cap": 122216481000.0,
+   "cap": 121429574000.0,
    "time": "Before open",
    "eps": "$1.58"
   },
@@ -664,15 +664,15 @@
    "date": "2026-10-15",
    "ticker": "BNY",
    "name": "BNY Mellon",
-   "cap": 98654503000.0,
+   "cap": 97534968000.0,
    "time": "-",
-   "eps": "$2.26"
+   "eps": "$2.27"
   },
   {
    "date": "2026-10-15",
    "ticker": "USB",
    "name": "U.S. Bancorp",
-   "cap": 89603539000.0,
+   "cap": 89229607000.0,
    "time": "Before open",
    "eps": "$1.32"
   },
@@ -680,15 +680,15 @@
    "date": "2026-10-15",
    "ticker": "PNC",
    "name": "PNC Financial Services",
-   "cap": 88178516000.0,
+   "cap": 87879311000.0,
    "time": "Before open",
-   "eps": "$4.97"
+   "eps": "$4.98"
   },
   {
    "date": "2026-10-15",
    "ticker": "MRSH",
    "name": "Marsh McLennan",
-   "cap": 81154548000.0,
+   "cap": 81331118000.0,
    "time": "Before open",
    "eps": "$1.96"
   },
@@ -696,7 +696,7 @@
    "date": "2026-10-15",
    "ticker": "IBKR",
    "name": "Interactive Brokers",
-   "cap": 40006803000.0,
+   "cap": 40346612000.0,
    "time": "After close",
    "eps": "$0.66"
   },
@@ -704,7 +704,7 @@
    "date": "2026-10-15",
    "ticker": "JBHT",
    "name": "J.B. Hunt",
-   "cap": 21994879000.0,
+   "cap": 21576017900.0,
    "time": "After close",
    "eps": "$2"
   },
@@ -712,7 +712,7 @@
    "date": "2026-10-15",
    "ticker": "SNA",
    "name": "Snap-on",
-   "cap": 19082135600.0,
+   "cap": 19004545000.0,
    "time": "-",
    "eps": "$4.91"
   },
@@ -720,15 +720,15 @@
    "date": "2026-10-16",
    "ticker": "TRV",
    "name": "Travelers Companies (The)",
-   "cap": 75166269000.0,
+   "cap": 75233010000.0,
    "time": "Before open",
-   "eps": "$6.80"
+   "eps": "$6.82"
   },
   {
    "date": "2026-10-16",
    "ticker": "TFC",
    "name": "Truist Financial",
-   "cap": 56744538000.0,
+   "cap": 56597942000.0,
    "time": "Before open",
    "eps": "$1.12"
   },
@@ -736,7 +736,7 @@
    "date": "2026-10-16",
    "ticker": "MTB",
    "name": "M&T Bank",
-   "cap": 31647379500.0,
+   "cap": 31520292900.0,
    "time": "Before open",
    "eps": "$4.99"
   },
@@ -744,7 +744,7 @@
    "date": "2026-10-16",
    "ticker": "CFG",
    "name": "Citizens Financial Group",
-   "cap": 27094302700.0,
+   "cap": 27085879300.0,
    "time": "Before open",
    "eps": "$1.38"
   },
@@ -752,7 +752,7 @@
    "date": "2026-10-16",
    "ticker": "RF",
    "name": "Regions Financial Corporation",
-   "cap": 23087290400.0,
+   "cap": 23061731300.0,
    "time": "Before open",
    "eps": "$0.67"
   },
@@ -760,7 +760,7 @@
    "date": "2026-10-19",
    "ticker": "FITB",
    "name": "Fifth Third Bancorp",
-   "cap": 46133625000.0,
+   "cap": 46070141000.0,
    "time": "Before open",
    "eps": "$1.09"
   },
@@ -768,7 +768,7 @@
    "date": "2026-10-19",
    "ticker": "STLD",
    "name": "Steel Dynamics",
-   "cap": 33250682900.0,
+   "cap": 34547802000.0,
    "time": "After close",
    "eps": "$5.41"
   },
@@ -776,7 +776,7 @@
    "date": "2026-10-19",
    "ticker": "WRB",
    "name": "W. R. Berkley Corporation",
-   "cap": 25607274500.0,
+   "cap": 25900544000.0,
    "time": "After close",
    "eps": "$1.13"
   },
@@ -784,7 +784,7 @@
    "date": "2026-10-20",
    "ticker": "GE",
    "name": "GE Aerospace",
-   "cap": 321187840000.0,
+   "cap": 317846913000.0,
    "time": "Before open",
    "eps": "$2.01"
   },
@@ -792,7 +792,7 @@
    "date": "2026-10-20",
    "ticker": "PM",
    "name": "Philip Morris International",
-   "cap": 292177674000.0,
+   "cap": 295404012000.0,
    "time": "Before open",
    "eps": "$2.33"
   },
@@ -800,7 +800,7 @@
    "date": "2026-10-20",
    "ticker": "NFLX",
    "name": "Netflix",
-   "cap": 279233790000.0,
+   "cap": 281065914000.0,
    "time": "After close",
    "eps": "$0.82"
   },
@@ -808,7 +808,7 @@
    "date": "2026-10-20",
    "ticker": "RTX",
    "name": "RTX Corporation",
-   "cap": 248903975000.0,
+   "cap": 248432263000.0,
    "time": "Before open",
    "eps": "$1.75"
   },
@@ -816,7 +816,7 @@
    "date": "2026-10-20",
    "ticker": "ISRG",
    "name": "Intuitive Surgical",
-   "cap": 138467328000.0,
+   "cap": 143600452000.0,
    "time": "After close",
    "eps": "$2.13"
   },
@@ -824,7 +824,7 @@
    "date": "2026-10-20",
    "ticker": "CB",
    "name": "Chubb Limited",
-   "cap": 127657312000.0,
+   "cap": 127502991000.0,
    "time": "After close",
    "eps": "$6.26"
   },
@@ -832,23 +832,15 @@
    "date": "2026-10-20",
    "ticker": "COF",
    "name": "Capital One",
-   "cap": 119457767000.0,
+   "cap": 119715430000.0,
    "time": "After close",
    "eps": "$5.43"
   },
   {
    "date": "2026-10-20",
-   "ticker": "ELV",
-   "name": "Elevance Health",
-   "cap": 83804799000.0,
-   "time": "-",
-   "eps": "$4.70"
-  },
-  {
-   "date": "2026-10-20",
    "ticker": "MMM",
    "name": "3M",
-   "cap": 83490300000.0,
+   "cap": 84160741000.0,
    "time": "-",
    "eps": "$2.41"
   },
@@ -856,23 +848,23 @@
    "date": "2026-10-20",
    "ticker": "GM",
    "name": "General Motors",
-   "cap": 68678132000.0,
+   "cap": 70397936000.0,
    "time": "Before open",
-   "eps": "$3.41"
+   "eps": "$3.46"
   },
   {
    "date": "2026-10-20",
    "ticker": "NOC",
    "name": "Northrop Grumman",
-   "cap": 67906126000.0,
+   "cap": 67637629000.0,
    "time": "Before open",
-   "eps": "$7.26"
+   "eps": "$7.21"
   },
   {
    "date": "2026-10-20",
    "ticker": "PCAR",
    "name": "Paccar",
-   "cap": 57731707000.0,
+   "cap": 57563271000.0,
    "time": "-",
    "eps": "$1.61"
   },
@@ -880,7 +872,7 @@
    "date": "2026-10-20",
    "ticker": "MSCI",
    "name": "MSCI",
-   "cap": 38963565000.0,
+   "cap": 40155845000.0,
    "time": "Before open",
    "eps": "$5.01"
   },
@@ -888,39 +880,39 @@
    "date": "2026-10-20",
    "ticker": "UAL",
    "name": "United Airlines Holdings",
-   "cap": 36518920000.0,
+   "cap": 35704214000.0,
    "time": "After close",
-   "eps": "$3.03"
+   "eps": "$3"
   },
   {
    "date": "2026-10-20",
    "ticker": "EQT",
    "name": "EQT Corporation",
-   "cap": 31382136800.0,
+   "cap": 31976378400.0,
    "time": "-",
    "eps": "$0.43"
   },
   {
    "date": "2026-10-20",
-   "ticker": "SYF",
-   "name": "Synchrony Financial",
-   "cap": 26702569500.0,
-   "time": "Before open",
-   "eps": "$2.42"
-  },
-  {
-   "date": "2026-10-20",
    "ticker": "HAL",
    "name": "Halliburton",
-   "cap": 26535202800.0,
+   "cap": 27310012400.0,
    "time": "Before open",
    "eps": "$0.58"
   },
   {
    "date": "2026-10-20",
+   "ticker": "SYF",
+   "name": "Synchrony Financial",
+   "cap": 26743496700.0,
+   "time": "Before open",
+   "eps": "$2.42"
+  },
+  {
+   "date": "2026-10-20",
    "ticker": "KEY",
    "name": "KeyCorp",
-   "cap": 21427941400.0,
+   "cap": 21534654500.0,
    "time": "Before open",
    "eps": "$0.46"
   },
@@ -928,7 +920,7 @@
    "date": "2026-10-20",
    "ticker": "OMC",
    "name": "Omnicom Group",
-   "cap": 20342753300.0,
+   "cap": 20644534300.0,
    "time": "-",
    "eps": "$2.68"
   },
@@ -936,7 +928,7 @@
    "date": "2026-10-20",
    "ticker": "GPC",
    "name": "Genuine Parts Company",
-   "cap": 17541275600.0,
+   "cap": 17403416600.0,
    "time": "Before open",
    "eps": "$2.10"
   },
@@ -944,7 +936,7 @@
    "date": "2026-10-20",
    "ticker": "EFX",
    "name": "Equifax",
-   "cap": 16447885300.0,
+   "cap": 16753346600.0,
    "time": "-",
    "eps": "$2.21"
   },
@@ -952,7 +944,7 @@
    "date": "2026-10-20",
    "ticker": "HAS",
    "name": "Hasbro",
-   "cap": 12629122000.0,
+   "cap": 13029688300.0,
    "time": "Before open",
    "eps": "$1.88"
   },
@@ -960,7 +952,7 @@
    "date": "2026-10-20",
    "ticker": "PNR",
    "name": "Pentair",
-   "cap": 8465600500.0,
+   "cap": 8425691100.0,
    "time": "-",
    "eps": "$1.08"
   },
@@ -968,7 +960,7 @@
    "date": "2026-10-21",
    "ticker": "LRCX",
    "name": "Lam Research",
-   "cap": 434857443000.0,
+   "cap": 432742531000.0,
    "time": "After close",
    "eps": "$2.17"
   },
@@ -976,7 +968,7 @@
    "date": "2026-10-21",
    "ticker": "TXN",
    "name": "Texas Instruments",
-   "cap": 268312166000.0,
+   "cap": 269316735000.0,
    "time": "After close",
    "eps": "$2.39"
   },
@@ -984,7 +976,7 @@
    "date": "2026-10-21",
    "ticker": "TMO",
    "name": "Thermo Fisher Scientific",
-   "cap": 242110530000.0,
+   "cap": 250230178000.0,
    "time": "Before open",
    "eps": "$6.40"
   },
@@ -992,7 +984,7 @@
    "date": "2026-10-21",
    "ticker": "IBM",
    "name": "IBM",
-   "cap": 209756799000.0,
+   "cap": 208758145000.0,
    "time": "After close",
    "eps": "$2.90"
   },
@@ -1000,7 +992,7 @@
    "date": "2026-10-21",
    "ticker": "ABT",
    "name": "Abbott Laboratories",
-   "cap": 168712372000.0,
+   "cap": 173211369000.0,
    "time": "Before open",
    "eps": "$1.43"
   },
@@ -1008,7 +1000,7 @@
    "date": "2026-10-21",
    "ticker": "T",
    "name": "AT&T",
-   "cap": 166512968000.0,
+   "cap": 166101828000.0,
    "time": "Before open",
    "eps": "$0.61"
   },
@@ -1016,7 +1008,7 @@
    "date": "2026-10-21",
    "ticker": "DHR",
    "name": "Danaher Corporation",
-   "cap": 150481191000.0,
+   "cap": 155507540000.0,
    "time": "Before open",
    "eps": "$1.96"
   },
@@ -1024,7 +1016,7 @@
    "date": "2026-10-21",
    "ticker": "PGR",
    "name": "Progressive Corporation",
-   "cap": 122268295000.0,
+   "cap": 123611267000.0,
    "time": "-",
    "eps": "$4.26"
   },
@@ -1032,9 +1024,9 @@
    "date": "2026-10-21",
    "ticker": "CME",
    "name": "CME Group",
-   "cap": 94619689000.0,
+   "cap": 97097187000.0,
    "time": "Before open",
-   "eps": "$2.93"
+   "eps": "$2.95"
   },
   {
    "date": "2026-10-21",
@@ -1046,9 +1038,17 @@
   },
   {
    "date": "2026-10-21",
+   "ticker": "ELV",
+   "name": "Elevance Health",
+   "cap": 85557101000.0,
+   "time": "Before open",
+   "eps": "$4.66"
+  },
+  {
+   "date": "2026-10-21",
    "ticker": "MCO",
    "name": "Moody's Corporation",
-   "cap": 76443550000.0,
+   "cap": 77619577000.0,
    "time": "Before open",
    "eps": "$4.26"
   },
@@ -1056,7 +1056,7 @@
    "date": "2026-10-21",
    "ticker": "WAB",
    "name": "Wabtec",
-   "cap": 48568627000.0,
+   "cap": 49298321000.0,
    "time": "Before open",
    "eps": "$2.72"
   },
@@ -1064,15 +1064,15 @@
    "date": "2026-10-21",
    "ticker": "NTRS",
    "name": "Northern Trust",
-   "cap": 31358599200.0,
+   "cap": 31225040900.0,
    "time": "Before open",
-   "eps": "$2.83"
+   "eps": "$2.86"
   },
   {
    "date": "2026-10-21",
    "ticker": "CCI",
    "name": "Crown Castle",
-   "cap": 28267259900.0,
+   "cap": 28752279600.0,
    "time": "After close",
    "eps": "$1.16"
   },
@@ -1080,7 +1080,7 @@
    "date": "2026-10-21",
    "ticker": "LUV",
    "name": "Southwest Airlines",
-   "cap": 20776673300.0,
+   "cap": 20473362400.0,
    "time": "After close",
    "eps": "$0.62"
   },
@@ -1088,7 +1088,7 @@
    "date": "2026-10-21",
    "ticker": "PKG",
    "name": "Packaging Corporation of America",
-   "cap": 20362524700.0,
+   "cap": 20431130600.0,
    "time": "After close",
    "eps": "$2.94"
   },
@@ -1096,7 +1096,7 @@
    "date": "2026-10-22",
    "ticker": "INTC",
    "name": "Intel",
-   "cap": 630667350000.0,
+   "cap": 614072250000.0,
    "time": "-",
    "eps": "$0.27"
   },
@@ -1104,7 +1104,7 @@
    "date": "2026-10-22",
    "ticker": "PG",
    "name": "Procter & Gamble",
-   "cap": 336833610000.0,
+   "cap": 339227771000.0,
    "time": "Before open",
    "eps": "$1.89"
   },
@@ -1112,15 +1112,15 @@
    "date": "2026-10-22",
    "ticker": "UNP",
    "name": "Union Pacific Corporation",
-   "cap": 165319328000.0,
+   "cap": 164594565000.0,
    "time": "Before open",
-   "eps": "$3.43"
+   "eps": "$3.44"
   },
   {
    "date": "2026-10-22",
    "ticker": "NEM",
    "name": "Newmont",
-   "cap": 121764676000.0,
+   "cap": 122038641000.0,
    "time": "After close",
    "eps": "$1.92"
   },
@@ -1128,33 +1128,25 @@
    "date": "2026-10-22",
    "ticker": "VLO",
    "name": "Valero Energy",
-   "cap": 116984930000.0,
+   "cap": 120736621000.0,
    "time": "Before open",
-   "eps": "$18.09"
+   "eps": "$17.92"
   },
   {
    "date": "2026-10-22",
    "ticker": "LMT",
    "name": "Lockheed Martin",
-   "cap": 116643955000.0,
+   "cap": 116925522000.0,
    "time": "Before open",
    "eps": "$7.25"
   },
   {
    "date": "2026-10-22",
-   "ticker": "FCX",
-   "name": "Freeport-McMoRan",
-   "cap": 103450706000.0,
-   "time": "-",
-   "eps": "$0.73"
-  },
-  {
-   "date": "2026-10-22",
    "ticker": "BX",
    "name": "Blackstone Inc.",
-   "cap": 83882353000.0,
-   "time": "-",
-   "eps": "$1.36"
+   "cap": 83807298000.0,
+   "time": "Before open",
+   "eps": "$1.34"
   },
   {
    "date": "2026-10-22",
@@ -1168,7 +1160,7 @@
    "date": "2026-10-22",
    "ticker": "NSC",
    "name": "Norfolk Southern",
-   "cap": 71299678000.0,
+   "cap": 71027909000.0,
    "time": "Before open",
    "eps": "$3.52"
   },
@@ -1176,7 +1168,7 @@
    "date": "2026-10-22",
    "ticker": "HON",
    "name": "Honeywell Technologies",
-   "cap": 67821994000.0,
+   "cap": 67869532000.0,
    "time": "Before open",
    "eps": "$2.17"
   },
@@ -1184,7 +1176,7 @@
    "date": "2026-10-22",
    "ticker": "FIX",
    "name": "Comfort Systems USA",
-   "cap": 60816151000.0,
+   "cap": 60290351000.0,
    "time": "-",
    "eps": "$12.42"
   },
@@ -1192,23 +1184,15 @@
    "date": "2026-10-22",
    "ticker": "NDAQ",
    "name": "Nasdaq, Inc.",
-   "cap": 50492424000.0,
+   "cap": 51532124000.0,
    "time": "Before open",
-   "eps": "$1.02"
-  },
-  {
-   "date": "2026-10-22",
-   "ticker": "F",
-   "name": "Ford Motor Company",
-   "cap": 47392596000.0,
-   "time": "-",
-   "eps": "$0.41"
+   "eps": "$1.03"
   },
   {
    "date": "2026-10-22",
    "ticker": "CBRE",
    "name": "CBRE Group",
-   "cap": 37523165000.0,
+   "cap": 37471044000.0,
    "time": "Before open",
    "eps": "$1.98"
   },
@@ -1216,7 +1200,7 @@
    "date": "2026-10-22",
    "ticker": "ROP",
    "name": "Roper Technologies",
-   "cap": 35042558000.0,
+   "cap": 35938599000.0,
    "time": "Before open",
    "eps": "$5.79"
   },
@@ -1224,7 +1208,7 @@
    "date": "2026-10-22",
    "ticker": "PCG",
    "name": "PG&E Corporation",
-   "cap": 33018961900.0,
+   "cap": 33099364400.0,
    "time": "Before open",
    "eps": "$0.40"
   },
@@ -1232,39 +1216,39 @@
    "date": "2026-10-22",
    "ticker": "HBAN",
    "name": "Huntington Bancshares",
-   "cap": 30972958700.0,
+   "cap": 30892142600.0,
    "time": "Before open",
    "eps": "$0.39"
   },
   {
    "date": "2026-10-22",
-   "ticker": "VRSN",
-   "name": "Verisign",
-   "cap": 26035296300.0,
-   "time": "After close",
-   "eps": "$2.42"
-  },
-  {
-   "date": "2026-10-22",
-   "ticker": "DGX",
-   "name": "Quest Diagnostics",
-   "cap": 25753415700.0,
-   "time": "Before open",
-   "eps": "$2.85"
-  },
-  {
-   "date": "2026-10-22",
    "ticker": "WST",
    "name": "West Pharmaceutical Services",
-   "cap": 25685745700.0,
+   "cap": 26514772000.0,
    "time": "-",
    "eps": "$2.18"
   },
   {
    "date": "2026-10-22",
+   "ticker": "VRSN",
+   "name": "Verisign",
+   "cap": 26391078900.0,
+   "time": "After close",
+   "eps": "$2.42"
+  },
+  {
+   "date": "2026-10-22",
    "ticker": "DOV",
    "name": "Dover Corporation",
-   "cap": 25547491300.0,
+   "cap": 25764327400.0,
+   "time": "Before open",
+   "eps": "$2.85"
+  },
+  {
+   "date": "2026-10-22",
+   "ticker": "DGX",
+   "name": "Quest Diagnostics",
+   "cap": 25630902300.0,
    "time": "Before open",
    "eps": "$2.85"
   },
@@ -1272,7 +1256,7 @@
    "date": "2026-10-22",
    "ticker": "PHM",
    "name": "PulteGroup",
-   "cap": 21693882400.0,
+   "cap": 21365839900.0,
    "time": "Before open",
    "eps": "$2.63"
   },
@@ -1280,7 +1264,7 @@
    "date": "2026-10-22",
    "ticker": "DOW",
    "name": "Dow Inc.",
-   "cap": 20203870200.0,
+   "cap": 20593934300.0,
    "time": "Before open",
    "eps": "$0.68"
   },
@@ -1288,7 +1272,7 @@
    "date": "2026-10-22",
    "ticker": "TSCO",
    "name": "Tractor Supply",
-   "cap": 16199138300.0,
+   "cap": 16371081200.0,
    "time": "-",
    "eps": "$0.40"
   },
@@ -1296,7 +1280,7 @@
    "date": "2026-10-22",
    "ticker": "ALLE",
    "name": "Allegion",
-   "cap": 13113523200.0,
+   "cap": 13067602900.0,
    "time": "-",
    "eps": "$2.48"
   },
@@ -1304,7 +1288,7 @@
    "date": "2026-10-22",
    "ticker": "DECK",
    "name": "Deckers Brands",
-   "cap": 10793094100.0,
+   "cap": 10941785100.0,
    "time": "-",
    "eps": "$1.82"
   },
@@ -1312,7 +1296,7 @@
    "date": "2026-10-23",
    "ticker": "AXP",
    "name": "American Express",
-   "cap": 204470305000.0,
+   "cap": 205307691000.0,
    "time": "Before open",
    "eps": "$4.52"
   },
@@ -1320,7 +1304,7 @@
    "date": "2026-10-23",
    "ticker": "GD",
    "name": "General Dynamics",
-   "cap": 89308226000.0,
+   "cap": 89749234000.0,
    "time": "-",
    "eps": "$4.14"
   },
@@ -1328,7 +1312,7 @@
    "date": "2026-10-23",
    "ticker": "ITW",
    "name": "Illinois Tool Works",
-   "cap": 74879615000.0,
+   "cap": 75241308000.0,
    "time": "-",
    "eps": "$2.99"
   },
@@ -1336,9 +1320,97 @@
    "date": "2026-10-23",
    "ticker": "SLB",
    "name": "Schlumberger",
-   "cap": 72337138000.0,
+   "cap": 74622722000.0,
    "time": "Before open",
    "eps": "$0.62"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "VZ",
+   "name": "Verizon",
+   "cap": 190496440000.0,
+   "time": "Before open",
+   "eps": "$1.28"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "WELL",
+   "name": "Welltower",
+   "cap": 161562182000.0,
+   "time": "After close",
+   "eps": "$1.63"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "CDNS",
+   "name": "Cadence Design Systems",
+   "cap": 97345921000.0,
+   "time": "-",
+   "eps": "$1.60"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "NUE",
+   "name": "Nucor",
+   "cap": 57038815000.0,
+   "time": "After close",
+   "eps": "$5.83"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "HIG",
+   "name": "Hartford (The)",
+   "cap": 34186756100.0,
+   "time": "After close",
+   "eps": "$3.10"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "FFIV",
+   "name": "F5, Inc.",
+   "cap": 25965260800.0,
+   "time": "-",
+   "eps": "$3.32"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "CINF",
+   "name": "Cincinnati Financial",
+   "cap": 24884930600.0,
+   "time": "-",
+   "eps": "$1.91"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "PFG",
+   "name": "Principal Financial Group",
+   "cap": 23772039200.0,
+   "time": "After close",
+   "eps": "$2.54"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "BRO",
+   "name": "Brown & Brown",
+   "cap": 20387809300.0,
+   "time": "After close",
+   "eps": "$1.08"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "UHS",
+   "name": "Universal Health Services",
+   "cap": 10375773200.0,
+   "time": "-",
+   "eps": "$5.37"
+  },
+  {
+   "date": "2026-10-26",
+   "ticker": "ARE",
+   "name": "Alexandria Real Estate Equities",
+   "cap": 7994478600.0,
+   "time": "After close",
+   "eps": "$1.52"
   }
  ]
 }
