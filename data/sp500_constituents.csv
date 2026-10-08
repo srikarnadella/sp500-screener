@@ -127,7 +127,6 @@ COO,Cooper Companies (The),Health Care
 CPRT,Copart,Industrials
 GLW,Corning Inc.,Information Technology
 CPAY,Corpay,Financials
-CTVA,Corteva,Materials
 CSGP,CoStar Group,Real Estate
 COST,Costco,Consumer Staples
 CRH,CRH plc,Materials
@@ -357,7 +356,7 @@ PCAR,Paccar,Industrials
 PKG,Packaging Corporation of America,Materials
 PLTR,Palantir Technologies,Information Technology
 PANW,Palo Alto Networks,Information Technology
-PSKY,Paramount Skydance Corporation,Communication Services
+SKYD,Paramount Skydance Corporation,Communication Services
 PH,Parker Hannifin,Industrials
 PAYX,Paychex,Industrials
 PYPL,PayPal,Financials
@@ -450,6 +449,7 @@ TDG,TransDigm Group,Industrials
 TRV,Travelers Companies (The),Financials
 TRMB,Trimble Inc.,Information Technology
 TFC,Truist Financial,Financials
+TWLO,Twilio,Information Technology
 TYL,Tyler Technologies,Information Technology
 TSN,Tyson Foods,Consumer Staples
 USB,U.S. Bancorp,Financials
@@ -477,12 +477,12 @@ V,Visa Inc.,Financials
 VST,Vistra Corp.,Utilities
 VMRK,Vivmark Residential,Real Estate
 VMC,Vulcan Materials Company,Materials
+VYLR,Vylor,Consumer Staples
 WRB,W. R. Berkley Corporation,Financials
 GWW,W. W. Grainger,Industrials
 WAB,Wabtec,Industrials
 WMT,Walmart,Consumer Staples
 DIS,Walt Disney Company (The),Communication Services
-WBD,Warner Bros. Discovery,Communication Services
 WM,Waste Management,Industrials
 WAT,Waters Corporation,Health Care
 WEC,WEC Energy Group,Utilities
