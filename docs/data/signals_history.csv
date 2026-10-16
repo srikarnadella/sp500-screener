@@ -945,3 +945,53 @@ date,list,rank,ticker,score,close,level,vix,regime
 2026-10-15,fade,23,SBAC,31.3,183.72,SMA200,16.46,Normal
 2026-10-15,fade,24,FERG,29.5,228.76,SMA200,16.46,Normal
 2026-10-15,fade,25,AMP,29.1,502.58,SMA20,16.46,Normal
+2026-10-16,long,1,FAST,52.9,50.53,SMA50,20.88,Rising fear
+2026-10-16,long,2,D,52.1,63.62,SMA200,20.88,Rising fear
+2026-10-16,long,3,GOOGL,50.8,341.29,SMA200,20.88,Rising fear
+2026-10-16,long,4,EME,47.9,722.83,BB lower,20.88,Rising fear
+2026-10-16,long,5,KEYS,44.8,336.05,SMA100,20.88,Rising fear
+2026-10-16,long,6,KLAC,42.8,168.71,BB lower,20.88,Rising fear
+2026-10-16,long,7,GOOG,42.6,337.6,SMA200,20.88,Rising fear
+2026-10-16,long,8,SOLV,41.3,85.68,SMA100,20.88,Rising fear
+2026-10-16,long,9,FCX,41.3,69.62,SMA100,20.88,Rising fear
+2026-10-16,long,10,ETN,39.7,393.2,BB lower,20.88,Rising fear
+2026-10-16,long,11,GWW,37.6,1323.71,SMA100,20.88,Rising fear
+2026-10-16,long,12,DXCM,37.1,86.37,SMA50,20.88,Rising fear
+2026-10-16,long,13,CINF,36.6,169.12,SMA50,20.88,Rising fear
+2026-10-16,long,14,WELL,35.5,234.05,SMA50,20.88,Rising fear
+2026-10-16,long,15,NWSA,34.0,29.9,SMA50,20.88,Rising fear
+2026-10-16,long,16,PGR,33.3,215.3,SMA100,20.88,Rising fear
+2026-10-16,long,17,LYV,30.4,169.23,SMA200,20.88,Rising fear
+2026-10-16,long,18,L,29.3,109.54,SMA50,20.88,Rising fear
+2026-10-16,long,19,LYB,28.1,63.87,SMA200,20.88,Rising fear
+2026-10-16,long,20,AVGO,27.7,331.68,BB lower,20.88,Rising fear
+2026-10-16,long,21,T,26.0,23.59,SMA20,20.88,Rising fear
+2026-10-16,long,22,HPQ,25.9,29.89,SMA100,20.88,Rising fear
+2026-10-16,long,23,OKE,25.7,92.89,SMA100,20.88,Rising fear
+2026-10-16,long,24,ROP,24.5,380.0,SMA50,20.88,Rising fear
+2026-10-16,long,25,MMM,22.7,163.94,SMA200,20.88,Rising fear
+2026-10-16,fade,1,NKE,60.3,37.17,SMA50,20.88,Rising fear
+2026-10-16,fade,2,TEL,60.2,211.82,SMA200,20.88,Rising fear
+2026-10-16,fade,3,ERIE,51.2,237.88,SMA50,20.88,Rising fear
+2026-10-16,fade,4,SHW,50.5,332.82,SMA100,20.88,Rising fear
+2026-10-16,fade,5,DDOG,45.9,244.53,SMA50,20.88,Rising fear
+2026-10-16,fade,6,VST,45.7,153.22,SMA200,20.88,Rising fear
+2026-10-16,fade,7,WMT,45.6,118.82,SMA200,20.88,Rising fear
+2026-10-16,fade,8,YUM,44.6,149.6,SMA100,20.88,Rising fear
+2026-10-16,fade,9,XYZ,43.6,77.57,SMA100,20.88,Rising fear
+2026-10-16,fade,10,PWR,42.5,630.91,SMA200,20.88,Rising fear
+2026-10-16,fade,11,CARR,41.7,55.13,SMA20,20.88,Rising fear
+2026-10-16,fade,12,SBAC,41.7,186.16,SMA200,20.88,Rising fear
+2026-10-16,fade,13,DELL,41.4,455.25,SMA100,20.88,Rising fear
+2026-10-16,fade,14,SBUX,41.1,96.81,BB upper,20.88,Rising fear
+2026-10-16,fade,15,NXPI,40.8,231.49,SMA50,20.88,Rising fear
+2026-10-16,fade,16,ORLY,40.7,88.96,SMA100,20.88,Rising fear
+2026-10-16,fade,17,MA,40.3,614.04,BB upper,20.88,Rising fear
+2026-10-16,fade,18,CTAS,39.6,212.63,BB upper,20.88,Rising fear
+2026-10-16,fade,19,ETR,37.5,104.88,SMA200,20.88,Rising fear
+2026-10-16,fade,20,VZ,37.2,44.82,SMA200,20.88,Rising fear
+2026-10-16,fade,21,WTW,34.8,313.04,SMA50,20.88,Rising fear
+2026-10-16,fade,22,CI,33.9,300.02,BB upper,20.88,Rising fear
+2026-10-16,fade,23,WEC,33.1,108.0,SMA200,20.88,Rising fear
+2026-10-16,fade,24,FERG,33.0,230.09,SMA200,20.88,Rising fear
+2026-10-16,fade,25,CEG,31.8,271.22,SMA50,20.88,Rising fear
